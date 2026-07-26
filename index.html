@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>小鹿的房间</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden;
+    font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  #app { display: block; width: 100vw; height: 100vh; }
+  #hud { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    background: rgba(255,255,255,.82); color: #5b4a3a; padding: 8px 16px;
+    border-radius: 999px; font-size: 13px; box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    backdrop-filter: blur(6px); white-space: nowrap; z-index: 10; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center;
+    background: #f3e9dc; color: #8a6f5a; font-size: 15px; transition: opacity .5s; z-index: 20; }
+  /* loading 会在 JS 启动后立即消失，不再阻塞 */
+  #loading.done { opacity: 0; pointer-events: none; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="app"></canvas>
+<div id="hud">WASD / 方向键 移动小鹿 · 点击地面让小鹿走过去</div>
+<div id="loading">正在加载房间…</div>
+<script type="module" src="./room3d/main.js"></script>
+</body>
+</html>

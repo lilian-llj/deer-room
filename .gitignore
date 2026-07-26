@@ -1,0 +1,17 @@
+# WorkBuddy 项目内存（不进仓库）
+.workbuddy/
+
+# 3D 房间未使用的 43MB 模型文件
+assets/deer3d/
+
+# 小鹿插画（其他项目的配图，非本站点资源）
+assets/*-xiaolu-scenes/
+
+# 已弃用的 2D 资料柜版本
+script.js
+styles.css
+pages/
+
+# 系统/编辑器
+.DS_Store
+Thumbs.db
