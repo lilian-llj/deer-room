@@ -30,6 +30,8 @@
 <canvas id="app"></canvas>
 <div id="hud">WASD / 方向键 移动小鹿 · 点击地面让小鹿走过去</div>
 <div id="loading">正在加载房间…</div>
-<script type="module" src="./room3d/main.js"></script>
+<!-- 安全兜底：8秒后强制消失 loading，防止 JS 模块加载失败时永远卡住 -->
+<script>setTimeout(() => { const el = document.getElementById('loading'); if (el) { el.style.opacity = '0'; setTimeout(() => el.style.display = 'none', 500); } }, 8000);</script>
+<script type="module" src="./main.js"></script>
 </body>
 </html>
