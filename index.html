@@ -14,24 +14,13 @@
     backdrop-filter: blur(6px); white-space: nowrap; z-index: 10; }
   #loading { position: fixed; inset: 0; display: grid; place-items: center;
     background: #f3e9dc; color: #8a6f5a; font-size: 15px; transition: opacity .5s; z-index: 20; }
-  /* loading 会在 JS 启动后立即消失，不再阻塞 */
-  #loading.done { opacity: 0; pointer-events: none; }
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "./vendor/three/three.module.js",
-    "three/addons/": "./vendor/three/addons/"
-  }
-}
-</script>
 </head>
 <body>
 <canvas id="app"></canvas>
 <div id="hud">WASD / 方向键 移动小鹿 · 点击地面让小鹿走过去</div>
 <div id="loading">正在加载房间…</div>
-<!-- 安全兜底：8秒后强制消失 loading，防止 JS 模块加载失败时永远卡住 -->
-<script>setTimeout(() => { const el = document.getElementById('loading'); if (el) { el.style.opacity = '0'; setTimeout(() => el.style.display = 'none', 500); } }, 8000);</script>
-<script type="module" src="./main.js"></script>
+<!-- 单文件 bundle：three.js + OrbitControls + main.js 全部打包在一起，无 ES Module 依赖 -->
+<script src="./bundle.js"></script>
 </body>
 </html>

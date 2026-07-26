@@ -215,12 +215,12 @@ mouse.position.set(0.55, DESK_H + 0.05, -DESK_L*0.24);
 mouse.castShadow = true;
 desk.add(mouse);
 // 有纹路的玻璃杯（半透明 + 高光）
-const glassMat = new THREE.MeshStandardMaterial({
+const cupGlassMat = new THREE.MeshStandardMaterial({
   color: 0xddeef8, roughness: 0.05, metalness: 0.15,
   transparent: true, opacity: 0.45
 });
 const glassCup = cyl(0.17, 0.14, 0.50, 0xffffff, 0.05);
-glassCup.material = glassMat;
+glassCup.material = cupGlassMat;
 glassCup.position.set(0.65, DESK_H + 0.29, DESK_L*0.34);
 desk.add(glassCup);
 // 玻璃杯外层（纹路效果：稍大的半透明壳）
