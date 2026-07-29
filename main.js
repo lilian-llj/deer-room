@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// ---------- 渲染器 ----------
+// ---------- 渲染器（canvas 尺寸由 applyResize() 统一管理）----------
 const canvas = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -17,8 +16,8 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xfbf3e8);
 scene.fog = new THREE.Fog(0xfbf3e8, 26, 50);
 
-// 固定俯视「娃娃屋」视角：房间不随小鹿移动
-const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 200);
+// 固定俯视「娃娃屋」视角：房间不随小鹿移动（aspect 由 applyResize() 设置）
+const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 200);
 camera.position.set(13, 13, 15);
 camera.lookAt(0, 1.5, 0);
 
@@ -185,8 +184,8 @@ scene.add(cabinet);
 // 书桌（长边贴窗，与窗等宽，桌面高度在窗下沿下方一点）
 const desk = new THREE.Group();
 const DESK = 0xf3e3cb; // 柔和杏白色
-const DESK_W = 2.6;           // 桌面短边（x 方向）—— 加宽
-const DESK_L = WIN_W + 1.0;     // 长边比窗略长，更舒展
+const DESK_W = 2.6;           // 桌面短边（x 方向）
+const DESK_L = WIN_W + 1.0;     // 长边比窗略长
 const DESK_T = 0.28;           // 桌面厚度
 const DESK_H = 3.0;            // 桌面高度（窗下沿 3.5 下方一点）
 const deskTop = box(DESK_W, DESK_T, DESK_L, DESK); deskTop.position.set(0, DESK_H, 0); desk.add(deskTop);
@@ -198,14 +197,14 @@ const halfL = DESK_L * 0.45;
 // 电脑（笔记本，屏幕面朝椅子方向 / +x）
 const laptopBase = box(1.05, 0.08, 0.72, 0x4a4a4a);
 laptopBase.position.set(-0.2, DESK_H + 0.06, -DESK_L*0.25);
-laptopBase.rotation.y = 0.35; // 稍微斜向椅子
+laptopBase.rotation.y = 0.35;
 desk.add(laptopBase);
 const laptopScreen = box(1.05, 0.72, 0.06, 0x2b2b2b);
 laptopScreen.position.set(-0.2, DESK_H + 0.44, -DESK_L*0.25 - 0.32);
 laptopScreen.rotation.x = -0.30;
-laptopScreen.rotation.y = 0.35; // 屏幕跟随底座朝向椅子
+laptopScreen.rotation.y = 0.35;
 desk.add(laptopScreen);
-// 鼠标（电脑旁边）
+// 鼠标
 const mouse = new THREE.Mesh(
   new THREE.CylinderGeometry(0.07, 0.08, 0.05, 16),
   new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.3 })
@@ -214,7 +213,7 @@ mouse.rotation.x = Math.PI / 2;
 mouse.position.set(0.55, DESK_H + 0.05, -DESK_L*0.24);
 mouse.castShadow = true;
 desk.add(mouse);
-// 有纹路的玻璃杯（半透明 + 高光）
+// 有纹路的玻璃杯
 const cupGlassMat = new THREE.MeshStandardMaterial({
   color: 0xddeef8, roughness: 0.05, metalness: 0.15,
   transparent: true, opacity: 0.45
@@ -223,7 +222,6 @@ const glassCup = cyl(0.17, 0.14, 0.50, 0xffffff, 0.05);
 glassCup.material = cupGlassMat;
 glassCup.position.set(0.65, DESK_H + 0.29, DESK_L*0.34);
 desk.add(glassCup);
-// 玻璃杯外层（纹路效果：稍大的半透明壳）
 const glassOuter = cyl(0.20, 0.17, 0.50, 0xe8f4fc, 0.08);
 glassOuter.material = new THREE.MeshStandardMaterial({
   color: 0xe8f4fc, roughness: 0.12, metalness: 0.1,
@@ -239,25 +237,26 @@ const holder = cyl(0.20, 0.19, 0.46, 0xc8a06a); holder.position.set(-0.75, DESK_
 // 本子 + 笔
 const notebook = box(0.82, 0.06, 0.56, 0xfffaf0); notebook.position.set(0.35, DESK_H + 0.05, DESK_L*0.10); notebook.rotation.y = 0.2; desk.add(notebook);
 const np = box(0.54, 0.04, 0.05, 0x333333); np.position.set(0.35, DESK_H + 0.11, DESK_L*0.10); np.rotation.y = 0.2; desk.add(np);
-// 草稿纸摊开（多加一张）
+// 草稿纸摊开
 const paperMat = new THREE.MeshStandardMaterial({ color: 0xfbf7ee, roughness: 0.95 });
 [
   [-0.55, DESK_L*0.22, 0.35],
   [0.70, -DESK_L*0.04, -0.42],
   [-0.15, DESK_L*0.14, -0.72],
-  [0.15, DESK_L*0.33, 0.10]   // 新增一张草稿纸
+  [0.15, DESK_L*0.33, 0.10]
 ].forEach(([x, z, r]) => {
   const p = new THREE.Mesh(new THREE.BoxGeometry(0.74, 0.02, 0.54), paperMat);
   p.position.set(x, DESK_H + 0.03, z); p.rotation.y = r; p.castShadow = true; p.receiveShadow = true; desk.add(p);
 });
-desk.position.set(-7.1, 0, 0); // 贴左墙，长边沿窗（窗 z∈[-WIN_W/2, WIN_W/2]）
+// 【关键修复】桌子向房间内(+x)挪 0.65，桌面左缘贴近左墙内壁，避免穿模
+desk.position.set(-6.45, 0, 0);
 scene.add(desk);
 
 // 皮质黑色椅子（矮 1/3、整体更大）
 const chair = new THREE.Group();
 const CH = 0x1c1c1c;
-const chSeatH = (DESK_H - 0.7) * (2/3);  // 座面高度降低 1/3
-const chScale = 1.35;                     // 整体放大系数
+const chSeatH = (DESK_H - 0.7) * (2/3);
+const chScale = 1.35;
 const chSeat = box(1.08 * chScale, 0.20, 1.08 * chScale, CH, 0.6);
 chSeat.position.set(0, chSeatH, 0); chair.add(chSeat);
 const chBack = box(1.08 * chScale, 1.25 * chScale, 0.20, CH, 0.6);
@@ -271,8 +270,8 @@ const chLegH = chSeatH - 0.10;
   const chLeg = cyl(0.09, 0.09, chLegH, 0x2a2a2a, 0.5, 12);
   chLeg.position.set(x, chLegH / 2, z); chair.add(chLeg);
 });
-chair.rotation.y = Math.PI / 2; // 椅背朝房间外侧，面向桌子(-x)
-chair.position.set(-5.0, 0, 0); // 稍微往外挪一点配合更宽的桌子
+chair.rotation.y = Math.PI / 2;
+chair.position.set(-4.7, 0, 0); // 桌子往内挪后，椅子相应跟着往内挪
 scene.add(chair);
 
 // 绿植（角落）
@@ -290,30 +289,42 @@ plant.scale.setScalar(1.5);
 plant.position.set(-6.6, 0, 5.5);
 scene.add(plant);
 
-// 墙上挂画（后墙）
-const frame = box(1.7, 1.3, 0.1, WOOD_D); frame.position.set(-2.5, 6.2, -7.78); frame.scale.setScalar(1.5); scene.add(frame);
-const canvasArt = box(1.4, 1.0, 0.06, 0x9ec5e8); canvasArt.position.set(-2.5, 6.2, -7.72); canvasArt.scale.setScalar(1.5); scene.add(canvasArt);
-
-// 小鹿初始位置避开家具
+// ---------- 墙上挂画（后墙中央，用户提供的小鹿图，按图原比例自适应 + 整体约 2 倍尺寸）----------
+const wallArtGroup = new THREE.Group();
+wallArtGroup.position.set(0, 6.4, -7.78); // 后墙正中 x=0
+scene.add(wallArtGroup);
+// 外框（占位 1×1，加载图后按比例 resize）
+const wallFrame = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 0.18),
+  new THREE.MeshStandardMaterial({ color: WOOD_D, roughness: 0.85 })
+);
+wallFrame.castShadow = true; wallFrame.receiveShadow = true;
+wallArtGroup.add(wallFrame);
+// 内画 plane（贴图，加载后替换 geometry 为图原比例的尺寸）
+const wallArt = new THREE.Mesh(
+  new THREE.PlaneGeometry(1, 1),
+  new THREE.MeshBasicMaterial({ transparent: true, side: THREE.DoubleSide })
+);
+wallArt.position.z = 0.10;
+wallArtGroup.add(wallArt);
 
 // ---------- 小鹿（2D 立牌 Sprite，透明 PNG，秒开） ----------
 let deer = null;
 let deerShadow = null;
 let deerBaseY = 0;
-let texStand = null, texWalk = null;  // 站立 / 走动贴图
-let facing = 1;                       // 1=右 -1=左（水平翻转）
+let texStand = null, texWalk = null;
+let facing = 1;
 const SPEED = 4.4;
 const vel = new THREE.Vector3();
 const keys = {};
 let target = null;
 const clock = new THREE.Clock();
 
-const DEER_H = 2.4;                  // 小鹿世界高度（与之前 GLB 一致）
-const DEER_ASPECT = 1024 / 1536;     // 贴图宽高比
-const DEER_FOOT_FRAC = 0.05;         // 脚底距图片底部的比例（目测约 5%）
-deerBaseY = DEER_H * (0.5 - DEER_FOOT_FRAC); // 让脚踩在 y=0
+const DEER_H = 2.4;
+const DEER_ASPECT = 1024 / 1536;
+const DEER_FOOT_FRAC = 0.05;
+deerBaseY = DEER_H * (0.5 - DEER_FOOT_FRAC);
 
-// 创建立牌（先无贴图，加载后填入；用淡紫色占位避免完全透明）
 const deerMat = new THREE.SpriteMaterial({
   color: 0xd9b8e0, transparent: true, opacity: 0.85, depthWrite: false
 });
@@ -322,21 +333,39 @@ deer.scale.set(DEER_H * DEER_ASPECT, DEER_H, 1);
 deer.position.set(0, deerBaseY, 2.5);
 scene.add(deer);
 
-// 地面阴影（跟随小鹿的暗色椭圆）
 const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18 });
 deerShadow = new THREE.Mesh(new THREE.CircleGeometry(0.55, 24), shadowMat);
 deerShadow.rotation.x = -Math.PI / 2;
 deerShadow.position.set(0, 0.008, 2.5);
 scene.add(deerShadow);
 
-// 加载小鹿贴图（异步，不阻塞场景渲染）
+// 场景构建完毕立即隐藏 loading
 const loadingEl = document.getElementById('loading');
-// 场景构建完毕立即隐藏 loading，让用户先看到房间
 loadingEl.classList.add('done');
 setTimeout(() => { loadingEl.style.display = 'none'; }, 500);
 
 const texLoader = new THREE.TextureLoader();
-// 先用纯色占位，贴图加载后替换
+
+// 加载墙上挂画
+texLoader.load(
+  'assets/wallart/deer-climbing.png',
+  t => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    const img = t.image;
+    const ratio = img.height / img.width; // 高/宽
+    const W = 4.8, H = W * ratio;          // 长边固定 4.8，自动按原比例适配高度
+    wallFrame.geometry.dispose();
+    wallFrame.geometry = new THREE.BoxGeometry(W + 0.30, H + 0.30, 0.18);
+    wallArt.geometry.dispose();
+    wallArt.geometry = new THREE.PlaneGeometry(W, H);
+    wallArt.material.map = t;
+    wallArt.material.needsUpdate = true;
+  },
+  undefined,
+  err => console.warn('墙上挂画加载失败', err)
+);
+
+// 加载小鹿贴图
 texLoader.load(
   'assets/deer/deer-stand.png',
   t => { t.colorSpace = THREE.SRGBColorSpace; texStand = t; if (!texWalk) { deerMat.map = t; deerMat.needsUpdate = true; } },
@@ -358,8 +387,10 @@ const raycaster = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 addEventListener('pointerdown', (e) => {
   if (e.target !== canvas) return;
-  ndc.x = (e.clientX / innerWidth) * 2 - 1;
-  ndc.y = -(e.clientY / innerHeight) * 2 + 1;
+  // canvas 内坐标：因 canvas 实际宽度 = innerWidth - 面板宽度，按 canvas 真实 client 宽高算 ndc
+  const rect = canvas.getBoundingClientRect();
+  ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   raycaster.setFromCamera(ndc, camera);
   const hit = raycaster.intersectObject(floor)[0];
   if (hit) target = hit.point.clone();
@@ -372,7 +403,7 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 10;
 controls.maxDistance = 36;
-controls.maxPolarAngle = Math.PI / 2.15; // 不允许转到地板以下
+controls.maxPolarAngle = Math.PI / 2.15;
 controls.update();
 
 // ---------- 主循环 ----------
@@ -400,35 +431,46 @@ function animate() {
     deer.position.x = THREE.MathUtils.clamp(deer.position.x, -HALF, HALF);
     deer.position.z = THREE.MathUtils.clamp(deer.position.z, -HALF, HALF);
 
-    // Sprite 立牌：水平翻转代替旋转朝向
     const moving = vel.lengthSq() > 0.05;
     if (Math.abs(vel.x) > 0.05) facing = vel.x > 0 ? 1 : -1;
     const baseW = DEER_H * DEER_ASPECT;
     deer.scale.set(baseW * facing, DEER_H, 1);
 
-    // 走动时换贴图，静止用站立贴图
     if (texStand && texWalk) {
       deerMat.map = moving ? texWalk : texStand;
       deerMat.needsUpdate = true;
     }
 
-    // 上下浮动（走路幅度大，站立幅度小）
     deer.position.y = deerBaseY + Math.abs(Math.sin(performance.now() * 0.006)) * 0.07 * (moving ? 1 : 0.3);
 
-    // 阴影跟随小鹿
     if (deerShadow) {
       deerShadow.position.x = deer.position.x;
       deerShadow.position.z = deer.position.z;
     }
   }
-  controls.update(); // 相机固定，仅响应用户拖拽/缩放
+  controls.update();
   renderer.render(scene, camera);
 }
 animate();
 
-// ---------- 自适应 ----------
-addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight;
+// ---------- 自适应：让 canvas 只占面板左侧，旋转后房间不被面板遮挡 ----------
+function getPanelW() {
+  return window.matchMedia('(max-width: 640px)').matches ? 0 : 320;
+}
+function applyResize() {
+  const w = Math.max(0, innerWidth - getPanelW());
+  const h = innerHeight;
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+  renderer.setSize(w, h, false); // false：不自动改 canvas CSS，由我们手动同步
+  canvas.style.width  = w + 'px';
+  canvas.style.height = h + 'px';
+}
+applyResize();
+addEventListener('resize', applyResize);
+// 断点切换（手机旋转 / 浏览器宽度变化）也响应
+if (window.matchMedia) {
+  const mql = window.matchMedia('(max-width: 640px)');
+  if (mql.addEventListener) mql.addEventListener('change', applyResize);
+  else if (mql.addListener) mql.addListener(applyResize); // 兼容旧浏览器
+}
