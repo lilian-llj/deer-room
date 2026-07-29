@@ -14,12 +14,106 @@
     backdrop-filter: blur(6px); white-space: nowrap; z-index: 10; }
   #loading { position: fixed; inset: 0; display: grid; place-items: center;
     background: #f3e9dc; color: #8a6f5a; font-size: 15px; transition: opacity .5s; z-index: 20; }
+
+  /* ===== 右侧常驻信息面板（静态版，不改动 3D 房间） ===== */
+  #side-panel {
+    position: fixed; top: 0; right: 0; z-index: 15;
+    width: 340px; height: 100vh;
+    background: rgba(251,243,231,.86);
+    backdrop-filter: blur(10px);
+    border-left: 1px solid rgba(255,255,255,.7);
+    box-shadow: -14px 0 44px rgba(90,70,50,.18);
+    padding: 26px 22px;
+    display: flex; flex-direction: column; gap: 18px;
+    overflow-y: auto;
+  }
+  .photo {
+    width: 100%; aspect-ratio: 3 / 4;
+    border: 2px dashed #c98a5e; border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; color: #8a7458; background: rgba(255,255,255,.5);
+  }
+  .photo .cam { font-size: 42px; opacity: .7; }
+  .photo .t { font-size: 14px; font-weight: 600; }
+  .photo .s { font-size: 11px; opacity: .85; }
+  .welcome {
+    text-align: center; font-size: 15px; line-height: 1.75; color: #5a4632;
+    background: rgba(255,255,255,.6); border-radius: 14px; padding: 14px 12px;
+  }
+  .welcome b { color: #e07856; }
+  .divider { height: 1px; background: #e6d3ba; margin: 2px 0; }
+  .map-head .h { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #5a4632; }
+  .map-head .sub { font-size: 12px; color: #8a7458; margin-top: 4px; }
+  .room-map { display: flex; flex-direction: column; gap: 10px; }
+  .rm-item {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,.62); border: 1px solid #e6d3ba; border-radius: 12px;
+    padding: 11px 13px; cursor: pointer; transition: .15s;
+  }
+  .rm-item:hover { transform: translateX(-3px); border-color: #e07856; box-shadow: 0 6px 14px rgba(224,120,86,.18); }
+  .rm-item .ic { font-size: 22px; width: 28px; text-align: center; }
+  .rm-item .meta { flex: 1; }
+  .rm-item .name { font-size: 14px; font-weight: 600; color: #5a4632; }
+  .rm-item .loc { font-size: 11px; color: #8a7458; margin-top: 2px; }
+  .rm-item .ar { color: #e07856; font-size: 16px; }
+  .panel-foot { margin-top: auto; font-size: 11px; color: #8a7458; text-align: center; line-height: 1.6; }
+
+  @media (max-width: 640px) {
+    #side-panel { width: 100%; height: auto; top: auto; bottom: 0;
+      border-left: none; border-top: 1px solid rgba(255,255,255,.7); max-height: 62vh; }
+    .photo { aspect-ratio: 4 / 3; }
+    #hud { bottom: auto; top: 14px; }
+  }
 </style>
 </head>
 <body>
 <canvas id="app"></canvas>
 <div id="hud">WASD / 方向键 移动小鹿 · 点击地面让小鹿走过去</div>
 <div id="loading">正在加载房间…</div>
+
+<!-- 右侧常驻信息面板（静态版：照片虚框 + 欢迎语 + Room Map 导航） -->
+<aside id="side-panel">
+  <div class="photo">
+    <div class="cam">📷</div>
+    <div class="t">你的真实照片（虚框占位）</div>
+    <div class="s">后期替换为 3:4 真实照片</div>
+  </div>
+
+  <div class="welcome">欢迎来到 <b>lilian</b> 创作的小鹿 room，<br>在这里，你可以更加了解我</div>
+
+  <div class="divider"></div>
+
+  <div class="map-head">
+    <div class="h">🗺 Room Map · 房间探索指引</div>
+    <div class="sub">点不到 3D 物件？从这里直达对应内容</div>
+  </div>
+
+  <div class="room-map">
+    <div class="rm-item">
+      <div class="ic">💻</div>
+      <div class="meta"><div class="name">我的作品</div><div class="loc">触发点：左侧靠窗的书桌 / 电脑</div></div>
+      <div class="ar">›</div>
+    </div>
+    <div class="rm-item">
+      <div class="ic">🛋️</div>
+      <div class="meta"><div class="name">关于我</div><div class="loc">触发点：房间后方的薰衣草沙发</div></div>
+      <div class="ar">›</div>
+    </div>
+    <div class="rm-item">
+      <div class="ic">✉️</div>
+      <div class="meta"><div class="name">联系方式</div><div class="loc">触发点：书桌上的信件 / 信箱</div></div>
+      <div class="ar">›</div>
+    </div>
+    <div class="rm-item">
+      <div class="ic">🪴</div>
+      <div class="meta"><div class="name">随笔 / 生活</div><div class="loc">触发点：角落绿植 / 墙上挂画</div></div>
+      <div class="ar">›</div>
+    </div>
+  </div>
+
+  <div class="panel-foot">每个 Room Map 条目 = 房间里一个可点击触发点<br>点击面板条目或房间物件，都会打开对应内容</div>
+</aside>
+
 <!-- 单文件 bundle：three.js + OrbitControls + main.js 全部打包在一起，无 ES Module 依赖 -->
 <script src="./bundle.js"></script>
 </body>
