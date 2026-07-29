@@ -137,12 +137,13 @@ arcLamp.add(arcBase);
 // 灯座在房间中后偏左（不再贴墙），弧杆从底座垂直升起，再水平弯出到灯罩位置
 // 本轮（v10）：整体杆子高度+1/5，灯罩同步抬高到 y=7.0（+1 单位）
 // 本轮（v12）：灯杆末端接进灯罩"碗口"内（y=6.45 → y=7.0），与碗口平面同高
+// 本轮（v13）：整体下降 0.5（灯杆顶 y=6.5、灯罩 y=6.5、灯泡 y=6.68）—— 让灯罩离桌面/挂画更近，视觉层次更好
 const arcCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(0, 0.07, 0),       // 底座中心（+1/5）
-  new THREE.Vector3(0.18, 2.4, 0.18),  // 先垂直上升（+1/5）
-  new THREE.Vector3(0.36, 5.4, 0.36),  // 弧杆高点（+1/5）
-  new THREE.Vector3(1.5, 6.95, 1.5),   // 开始水平弯出（往碗口方向下降一点）
-  new THREE.Vector3(3.0, 7.0, 3.0)     // 灯罩碗口位置（灯杆末端"插入"碗口平面，视觉自然连接）
+  new THREE.Vector3(0, 0.07, 0),       // 底座中心（保持贴地）
+  new THREE.Vector3(0.18, 1.9, 0.18),  // 先垂直上升（-0.5）
+  new THREE.Vector3(0.36, 4.9, 0.36),  // 弧杆高点（-0.5）
+  new THREE.Vector3(1.5, 6.45, 1.5),   // 开始水平弯出（-0.5）
+  new THREE.Vector3(3.0, 6.5, 3.0)     // 灯罩碗口位置（-0.5，灯杆顶面"插入"碗口平面 y=6.5）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -160,13 +161,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(3.0, 7.0, 3.0);  // 球心 = 碗口平面 y=7.0（碗口朝下，碗底 y=7.55 朝天）
+arcShade.position.set(3.0, 6.5, 3.0);  // v13：球心 = 碗口平面 y=6.5（碗口朝下，碗底 y=7.05 朝天；整体下降 0.5）
 // arcShade.rotation.x = 0;  // 不旋转，默认开口朝下（朝 -y，照桌面）—— v12 修复
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（碗口边缘装饰）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(3.0, 7.0, 3.0);  // 碗口边缘 y=7.0（与球心同高 = 开口平面）
+arcShadeRing.position.set(3.0, 6.5, 3.0);  // v13：碗口边缘 y=6.5（与球心同高 = 开口平面；与灯杆顶面 y=6.5 接触）
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）—— 灯泡挂在碗内
 const arcBulb = new THREE.Mesh(
@@ -176,7 +177,7 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(3.0, 7.18, 3.0);  // 灯泡在碗内（碗口 y=7.0 上方 0.18 = 碗底 y=7.55 下方 0.37，被碗罩住）
+arcBulb.position.set(3.0, 6.68, 3.0);  // v13：灯泡在碗内（碗口 y=6.5 上方 0.18 = 碗底 y=7.05 下方 0.37，被碗罩住）
 arcLamp.add(arcBulb);
 // 位置：房间中后偏左（从墙角往中央挪 2.5，灯更偏房间中心），弧形杆垂直上升后水平延伸
 arcLamp.position.set(-4.5, 0, -4.5);
@@ -199,14 +200,16 @@ for (let r = 0; r < 3; r++) {
 cabinet.position.set(6.0, 0, -6.6);  // 往沙发右侧挪 2.0（沙发右扶手外缘 x=4.29，柜左缘 x=4.5，间隙 0.21 紧贴但不重叠）
 scene.add(cabinet);
 
-// ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱，本轮 v12：桌子正前方贴左墙 + 整体放大 5 倍）----------
-// 位置：桌子 desk.position=(-6.45, 0, 0)，桌 z 范围约 [-1.5, +1.5]，x 范围 [-7.75, -5.15]
-// 新位置 (-6.5, 0, +2.2)：杂志架 z 中心在桌子前缘外 0.7m，x 中心在桌子中线稍偏左
-// 不旋转（CD 面朝 +z 朝相机），左缘 x=-7.75 紧贴左墙 -7.78，右缘 -5.25 不超桌右缘 -5.15
-// 整体 scale 5x：原杂志架高 1.85+0.22=2.07m → 10.35m（约房间墙高 12m 的 86%）
+// ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱）
+// v11：桌子左侧 x=-7.0；
+// v12：挪到桌子正前方贴左墙 + 整体放大 5 倍（在 -6.5, 0, +2.2）；
+// v13（本轮）：①整体缩小 1/2（scale 5 → 2.5）②往 +Z 外移 1.3m（z=2.2 → 3.5）避开桌子前缘 z=+1.5 重叠 ③绕 y 旋转 90°（立柱跨距从 x 方向改到 z 方向，shelf 长边 0.5 沿 z 沿墙面方向，CD 面朝左）
+// 位置：magazineRack 中心 (-6.5, 0, +3.5)，立柱 ±0.22×scale 沿 z 方向，shelf 长边 0.5×scale 沿 z 方向
+// 长边（0.5）沿 z 方向 = 沿前后方向 = 沿墙面方向 = "长边靠墙"（沿墙面方向）✓
 const magazineRack = new THREE.Group();
-magazineRack.position.set(-6.5, 0, 2.2);
-magazineRack.scale.setScalar(5);  // v12：整体放大 5 倍（用户要求）
+magazineRack.position.set(-6.5, 0, 3.5);
+magazineRack.scale.setScalar(2.5);  // v13：整体缩小 1/2（原 5 倍 → 2.5 倍，原 10.35m 高 → 5.18m 高）
+magazineRack.rotation.y = Math.PI / 2;  // v13：绕 y 旋转 90°（立柱跨距从 x 方向改到 z 方向，shelf 长边沿 z）
 const ironMat = new THREE.MeshStandardMaterial({
   color: 0x121212, roughness: 0.45, metalness: 0.75
 });
@@ -240,11 +243,14 @@ SHELF_LEVELS.forEach(y => {
   shelf.castShadow = true; shelf.receiveShadow = true;
   magazineRack.add(shelf);
   // 每层前缘"挡条"（防止书/CD 滑出）
+  // v13：rotation.y = π/2 后，原 z=+0.115 偏移旋转成 +x 方向，但 slot 已改成沿 x 偏移
+  //      凸出 +z 方向（朝相机），所以挡条也要相应调整：原 z=+0.115 改 z=-0.115
+  //      旋转后挡条凸出 -x 方向（远离桌子）= 防止 slot 朝 -z 方向（旋转后 -x 方向）滑出 ✓
   const rail = new THREE.Mesh(
     new THREE.BoxGeometry(0.50, 0.025, 0.02),
     ironMat
   );
-  rail.position.set(0, y + 0.06, 0.115);
+  rail.position.set(0, y + 0.06, -0.115);
   magazineRack.add(rail);
 });
 // 底部踢脚（架子底座）
@@ -373,20 +379,23 @@ function makeMagItem(filename, label, type, w, h, x, y, z) {
   return grp;
 }
 
-// 物件摆放规则（每层 slot 位置 x 范围 [-0.18, +0.18]，z=0.115 靠前展示）
+// 物件摆放规则（每层 slot 位置 x 范围 [-0.18, +0.18]）
+// v13：rotation.y = π/2 后，CD 凸出方向从 +z（朝相机）旋转成 +x（朝桌子方向）。
+//       所以把 z=0.115 偏移从 z 轴移到 x 轴（每个 slot 的 x -= 0.115，z 改 0），
+//       旋转后 CD 凸出方向恢复到 +z（朝相机）✓
 // 第 1 层（y=1.53）：1 圆形黑胶 + 1 方形专辑
-magazineRack.add(makeMagItem('record-1.png', 'Record 1', 'record', 0.34, 0.34, -0.11, 1.53 + 0.18, 0.115));
-magazineRack.add(makeMagItem('album-1.png',   'Album 1',  'album',  0.20, 0.20,  0.10, 1.53 + 0.10, 0.115));
+magazineRack.add(makeMagItem('record-1.png', 'Record 1', 'record', 0.34, 0.34, -0.11 - 0.115, 1.53 + 0.18, 0));
+magazineRack.add(makeMagItem('album-1.png',   'Album 1',  'album',  0.20, 0.20,  0.10 - 0.115, 1.53 + 0.10, 0));
 // 第 2 层（y=1.08）：2 本长方形书
-magazineRack.add(makeMagItem('book-1.png', 'Book 1', 'book', 0.12, 0.28, -0.10, 1.08 + 0.14, 0.115));
-magazineRack.add(makeMagItem('book-2.png', 'Book 2', 'book', 0.12, 0.28,  0.08, 1.08 + 0.14, 0.115));
+magazineRack.add(makeMagItem('book-1.png', 'Book 1', 'book', 0.12, 0.28, -0.10 - 0.115, 1.08 + 0.14, 0));
+magazineRack.add(makeMagItem('book-2.png', 'Book 2', 'book', 0.12, 0.28,  0.08 - 0.115, 1.08 + 0.14, 0));
 // 第 3 层（y=0.63）：2 方形专辑 + 1 本书
-magazineRack.add(makeMagItem('album-2.png', 'Album 2', 'album', 0.18, 0.18, -0.15, 0.63 + 0.09, 0.115));
-magazineRack.add(makeMagItem('album-3.png', 'Album 3', 'album', 0.18, 0.18,  0.02, 0.63 + 0.09, 0.115));
-magazineRack.add(makeMagItem('book-3.png',  'Book 3',  'book',  0.10, 0.24,  0.16, 0.63 + 0.12, 0.115));
+magazineRack.add(makeMagItem('album-2.png', 'Album 2', 'album', 0.18, 0.18, -0.15 - 0.115, 0.63 + 0.09, 0));
+magazineRack.add(makeMagItem('album-3.png', 'Album 3', 'album', 0.18, 0.18,  0.02 - 0.115, 0.63 + 0.09, 0));
+magazineRack.add(makeMagItem('book-3.png',  'Book 3',  'book',  0.10, 0.24,  0.16 - 0.115, 0.63 + 0.12, 0));
 // 第 4 层（y=0.18）：1 圆形黑胶 + 1 方形专辑
-magazineRack.add(makeMagItem('record-2.png', 'Record 2', 'record', 0.32, 0.32, -0.10, 0.18 + 0.17, 0.115));
-magazineRack.add(makeMagItem('album-4.png',  'Album 4',  'album',  0.18, 0.18,  0.11, 0.18 + 0.09, 0.115));
+magazineRack.add(makeMagItem('record-2.png', 'Record 2', 'record', 0.32, 0.32, -0.10 - 0.115, 0.18 + 0.17, 0));
+magazineRack.add(makeMagItem('album-4.png',  'Album 4',  'album',  0.18, 0.18,  0.11 - 0.115, 0.18 + 0.09, 0));
 
 // ---------- 书桌（长边贴窗）----------
 const desk = new THREE.Group();
