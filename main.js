@@ -133,13 +133,14 @@ const arcBase = cyl(0.42, 0.45, 0.06, 0x4a4a4a, 0.5);
 arcBase.position.set(0, 0.03, 0);
 arcBase.material.metalness = 0.4;
 arcLamp.add(arcBase);
-// 弧形金属杆：从底座向上、向外弧出到灯罩位置（灯罩抬到壁画中间位置 y=6.0）
-// 灯座在房间左后墙角（对角线三线交汇处），弧杆一路向房间中心延伸，灯罩 world 落地 (-3, 6.0, -3)
+// 弧形金属杆：从底座先垂直上升，再自然往外水平延伸至灯罩（更有弧度的优雅曲线）
+// 灯座在房间中后偏左（不再贴墙），弧杆从底座垂直升起 ~4.5，再水平弯出到灯罩位置
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.06, 0),       // 底座中心
-  new THREE.Vector3(1.0, 2.0, 1.0),    // 上弧
-  new THREE.Vector3(2.5, 4.0, 2.5),    // 弧顶
-  new THREE.Vector3(4.0, 6.0, 4.0)     // 灯罩位置（壁画中心 y=6.0；world ≈ (-3, 6.0, -3)）
+  new THREE.Vector3(0.15, 2.0, 0.15),  // 先垂直上升（几乎不外扩）
+  new THREE.Vector3(0.30, 4.5, 0.30),  // 弧杆高点（仍接近垂直）
+  new THREE.Vector3(1.5, 5.8, 1.5),    // 开始水平弯出
+  new THREE.Vector3(3.0, 6.0, 3.0)     // 灯罩位置（壁画中心 y=6.0；world ≈ (-1.5, 6.0, -1.5)）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -173,8 +174,8 @@ const arcBulb = new THREE.Mesh(
 );
 arcBulb.position.set(4.0, 5.75, 4.0);
 arcLamp.add(arcBulb);
-// 位置：房间左后墙角（对角线三线交汇处 = 左墙 + 后墙 + 地板），弧形杆向房间中心延伸
-arcLamp.position.set(-7, 0, -7);
+// 位置：房间中后偏左（从墙角往中央挪 2.5，灯更偏房间中心），弧形杆垂直上升后水平延伸
+arcLamp.position.set(-4.5, 0, -4.5);
 scene.add(arcLamp);
 
 // ---------- 六抽屉柜（招牌家具，靠后墙右侧）----------
@@ -227,7 +228,7 @@ macbook.add(macTouchPad);
 // 屏幕组（hinge 在底座 -z 端，立起来）
 const macScreen = new THREE.Group();
 macScreen.position.set(0, 0.04, -0.39);
-macScreen.rotation.x = -1.10;  // 约 63° 倾斜（接近垂直略后倾）
+macScreen.rotation.x = 0.349;  // 约 110° 翻盖（从合盖 -90° 翻 110°，屏幕和底座夹角 110°）
 macbook.add(macScreen);
 // 屏幕外框（银灰金属）
 const macFrame = box(1.20, 0.78, 0.04, 0xc8ccd0, 0.4, { metalness: 0.6 });
@@ -249,7 +250,8 @@ const macApple = new THREE.Mesh(
 macApple.position.set(0, 0.39, -0.022);
 macApple.rotation.y = Math.PI;  // 朝外（屏幕背面，朝向相机）
 macScreen.add(macApple);
-macbook.position.set(0, DESK_H + 0.18, -0.15);  // 抬到桌面上方
+macbook.position.set(0, DESK_H + 0.20, -0.15);  // 抬到桌面上方（110° 翻盖后屏幕底部 y=0.197 > 桌面 0 浮在桌面上）
+macbook.rotation.y = -Math.PI / 2;  // 转方向：屏幕朝 +x（椅子方向）
 desk.add(macbook);
 
 // 【玻璃水杯 + 2/3 水】保留不动
@@ -403,7 +405,7 @@ leafConfigs.forEach(cfg => {
   monstera.add(leaf);
 });
 monstera.scale.setScalar(1.60);  // 整体大小与上轮一致
-monstera.position.set(-2.2, 0, -5.5);
+monstera.position.set(-3.5, 0, -5.5);  // 往左挪避开沙发左扶手（原 -2.2 与沙发 -1.825 重叠 ~0.9）
 scene.add(monstera);
 
 // ---------- 墙上挂画（用户提供的爬山图）----------
