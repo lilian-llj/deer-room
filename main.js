@@ -133,13 +133,13 @@ const arcBase = cyl(0.42, 0.45, 0.06, 0x4a4a4a, 0.5);
 arcBase.position.set(0, 0.03, 0);
 arcBase.material.metalness = 0.4;
 arcLamp.add(arcBase);
-// 弧形金属杆：从底座向上、向外弧出到灯罩位置（缩短 + 抬高到红线 y=4.0）
-// 灯座在房间左后墙角（对角线三线交汇处），弧杆一路向房间中心延伸，灯罩 world 落地 (-4, 4.0, -4)
+// 弧形金属杆：从底座向上、向外弧出到灯罩位置（灯罩抬到壁画中间位置 y=6.0）
+// 灯座在房间左后墙角（对角线三线交汇处），弧杆一路向房间中心延伸，灯罩 world 落地 (-3, 6.0, -3)
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.06, 0),       // 底座中心
-  new THREE.Vector3(0.8, 1.5, 0.8),    // 上弧（缩短）
-  new THREE.Vector3(1.8, 3.0, 1.8),    // 弧顶
-  new THREE.Vector3(3.0, 4.0, 3.0)     // 灯罩位置（红线高度 y=4.0；world ≈ (-4, 4.0, -4)）
+  new THREE.Vector3(1.0, 2.0, 1.0),    // 上弧
+  new THREE.Vector3(2.5, 4.0, 2.5),    // 弧顶
+  new THREE.Vector3(4.0, 6.0, 4.0)     // 灯罩位置（壁画中心 y=6.0；world ≈ (-3, 6.0, -3)）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -155,13 +155,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(3.0, 4.0, 3.0);
+arcShade.position.set(4.0, 6.0, 4.0);
 arcShade.rotation.x = Math.PI; // 开口朝下
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（增加细节）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(3.0, 3.66, 3.0);
+arcShadeRing.position.set(4.0, 5.66, 4.0);
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）
 const arcBulb = new THREE.Mesh(
@@ -171,7 +171,7 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(3.0, 3.75, 3.0);
+arcBulb.position.set(4.0, 5.75, 4.0);
 arcLamp.add(arcBulb);
 // 位置：房间左后墙角（对角线三线交汇处 = 左墙 + 后墙 + 地板），弧形杆向房间中心延伸
 arcLamp.position.set(-7, 0, -7);
@@ -208,38 +208,52 @@ const halfL = DESK_L * 0.45;
   const leg = box(0.18, DESK_H, 0.18, WOOD_D); leg.position.set(x, legH, z); desk.add(leg);
 });
 
-// 【MacBook 笔记本】居中面对椅子（椅子在 +x 方向）
-// 整组放在桌子中心，rotation.y = -π/2 让屏幕长边沿 z 方向、屏幕面朝 +x
+// 【MacBook 笔记本开盖】居中面对椅子（椅子在 +x 方向）
+// 整组放在桌子中心，屏幕 hinge 在底座 -z 端立起，rotation 略向后倾
 const macbook = new THREE.Group();
-const macBaseMat = new THREE.MeshStandardMaterial({ color: 0xc8ccd0, roughness: 0.45, metalness: 0.55 });
-const macBase = box(1.10, 0.06, 0.74, 0xc8ccd0, 0.45, { metalness: 0.55 });
-macBase.position.set(0, 0.03, 0);
+// 底座（梯形：靠屏幕端 0.74 厚，靠用户端 0.78 厚，更像真笔记本）
+// 简化为 box 1.20×0.04×0.78 银灰金属
+const macBase = box(1.20, 0.04, 0.78, 0xc8ccd0, 0.4, { metalness: 0.6 });
+macBase.position.set(0, 0.02, 0);
 macbook.add(macBase);
-// 底座上的 macbook 凹刻 logo（小黑色方块）
-const macLogo = box(0.18, 0.005, 0.18, 0x1a1a1a, 0.8);
-macLogo.position.set(0, 0.063, 0.32);
-macbook.add(macLogo);
-// 屏幕（银灰色金属外框 + 深色内屏）
-// 屏幕本地：width 沿 z（面对 +x 椅子时左右方向）、height 沿 y、depth 沿 x
-const macScreen = box(0.05, 0.66, 1.00, 0xc8ccd0, 0.45, { metalness: 0.55 });
-macScreen.position.set(-0.32, 0.40, 0);  // 在底座 -x 端立起来
-macScreen.rotation.x = -0.18;            // 屏幕向后倾（-x 方向）
+// 键盘区（黑色凹陷，整体大方块，不再画键位细节）
+const macKeyboard = box(0.95, 0.006, 0.50, 0x1c1c1c, 0.5);
+macKeyboard.position.set(0, 0.045, 0.10);
+macbook.add(macKeyboard);
+// TouchPad（触摸板，银灰）
+const macTouchPad = box(0.42, 0.006, 0.22, 0xa8acaf, 0.35);
+macTouchPad.position.set(0, 0.045, -0.24);
+macbook.add(macTouchPad);
+// 屏幕组（hinge 在底座 -z 端，立起来）
+const macScreen = new THREE.Group();
+macScreen.position.set(0, 0.04, -0.39);
+macScreen.rotation.x = -1.10;  // 约 63° 倾斜（接近垂直略后倾）
 macbook.add(macScreen);
-// 内屏（深色，嵌在外框里）
-const macScreenInset = box(0.01, 0.58, 0.92, 0x0e0e12, 0.4, { metalness: 0.1 });
-macScreenInset.position.set(-0.28, 0.40, 0);
-macScreenInset.rotation.x = -0.18;
-macbook.add(macScreenInset);
+// 屏幕外框（银灰金属）
+const macFrame = box(1.20, 0.78, 0.04, 0xc8ccd0, 0.4, { metalness: 0.6 });
+macFrame.position.set(0, 0.39, 0);
+macScreen.add(macFrame);
+// 屏幕内屏（**深蓝色**，不是纯黑，更像"开机的电脑"）
+const macInset = box(1.10, 0.66, 0.005, 0x1a3a60, 0.4, { metalness: 0.05, emissive: 0x0a1a30, emissiveIntensity: 0.3 });
+macInset.position.set(0, 0.40, 0.022);
+macScreen.add(macInset);
 // 屏幕顶端的小刘海（macbook 标志）
-const macNotch = box(0.02, 0.04, 0.12, 0x1a1a1a, 0.7);
-macNotch.position.set(-0.30, 0.69, 0);
-macNotch.rotation.x = -0.18;
-macbook.add(macNotch);
-macbook.position.set(0, DESK_H + 0.20, -0.15);  // 抬高 0.20（桌面顶 y=3.14，底座顶 y=3.26 浮在桌面上）
+const macNotch = box(0.18, 0.04, 0.015, 0x0a0a0a, 0.7);
+macNotch.position.set(0, 0.78, 0.020);
+macScreen.add(macNotch);
+// 屏幕底部的 Apple Logo（屏幕中央略偏下，银灰金属反光）
+const macApple = new THREE.Mesh(
+  new THREE.CircleGeometry(0.06, 24),
+  new THREE.MeshStandardMaterial({ color: 0xe8ecf0, roughness: 0.25, metalness: 0.7 })
+);
+macApple.position.set(0, 0.39, -0.022);
+macApple.rotation.y = Math.PI;  // 朝外（屏幕背面，朝向相机）
+macScreen.add(macApple);
+macbook.position.set(0, DESK_H + 0.18, -0.15);  // 抬到桌面上方
 desk.add(macbook);
 
-// 【玻璃水杯 + 2/3 水】
-// 玻璃外杯：透明圆柱
+// 【玻璃水杯 + 2/3 水】保留不动
+// （水杯已经 2/3 水 + 玻璃透明，看起来"像水杯"，不动）
 const glassCup = cyl(0.17, 0.14, 0.50, 0xffffff, 0.05);
 glassCup.material = new THREE.MeshStandardMaterial({
   color: 0xddeef8, roughness: 0.05, metalness: 0.15,
@@ -247,33 +261,47 @@ glassCup.material = new THREE.MeshStandardMaterial({
 });
 glassCup.position.set(-0.70, DESK_H + 0.29, DESK_L * 0.32);
 desk.add(glassCup);
-// 水（2/3 高度，淡蓝半透明）
 const waterMat = new THREE.MeshStandardMaterial({
   color: 0x9ec9e8, roughness: 0.20, metalness: 0.05,
   transparent: true, opacity: 0.65, side: THREE.DoubleSide
 });
 const water = cyl(0.15, 0.13, 0.32, 0x9ec9e8, 0.20);
 water.material = waterMat;
-water.position.set(-0.70, DESK_H + 0.18, DESK_L * 0.32);  // 杯子下半部 0.18
+water.position.set(-0.70, DESK_H + 0.18, DESK_L * 0.32);
 desk.add(water);
-// 水面（薄圆盘，模拟反光）
 const waterTop = cyl(0.15, 0.15, 0.005, 0xc4def0, 0.1);
 waterTop.position.set(-0.70, DESK_H + 0.34, DESK_L * 0.32);
 desk.add(waterTop);
 
-// 【MacBook 鼠标】（长椭圆扁款，黑色，紧贴电脑右侧）
+// 【MacBook 鼠标】传统圆滑鼠标（用 LatheGeometry 旋转面，更像"鼠标"而不是"耳机"）
+// 鼠标侧面轮廓（半剖面）：从底面到顶部拱起，前端圆后端略平
+const mouseProfile = [
+  new THREE.Vector2(0.00, 0.00),   // 底面中线
+  new THREE.Vector2(0.07, 0.00),   // 底面边缘
+  new THREE.Vector2(0.085, 0.015), // 底弧
+  new THREE.Vector2(0.090, 0.035), // 中部下
+  new THREE.Vector2(0.085, 0.055), // 中部
+  new THREE.Vector2(0.065, 0.080), // 中上
+  new THREE.Vector2(0.030, 0.095), // 顶前
+  new THREE.Vector2(0.000, 0.100)  // 顶部中线
+];
 const macMouse = new THREE.Mesh(
-  new THREE.SphereGeometry(0.10, 16, 12),
-  new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.15 })
+  new THREE.LatheGeometry(mouseProfile, 28),
+  new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.32, metalness: 0.15 })
 );
-macMouse.scale.set(1.0, 0.35, 1.5);  // x 扁、y 矮、z 长
-macMouse.position.set(0.55, DESK_H + 0.20, -DESK_L * 0.20);  // 抬高 0.20（鼠标底 y=3.165 > 桌面顶 3.14）
+macMouse.scale.set(1.0, 1.0, 1.45);  // z 拉长 1.45 倍（前长后短）
+macMouse.position.set(0.62, DESK_H + 0.18, -DESK_L * 0.20);  // 抬到桌面上方
 macMouse.castShadow = true;
 desk.add(macMouse);
-// 鼠标表面有一条分隔线（白色细条模拟感应区）
-const mouseLine = box(0.005, 0.002, 0.15, 0xcccccc, 0.4);
-mouseLine.position.set(0.55, DESK_H + 0.235, -DESK_L * 0.20);  // 跟随鼠标抬高
+// 鼠标中线（左右键分隔线）
+const mouseLine = box(0.003, 0.002, 0.18, 0xaaaaaa, 0.4);
+mouseLine.position.set(0.62, DESK_H + 0.275, -DESK_L * 0.20 + 0.02);  // y 略高，z 微偏前
 desk.add(mouseLine);
+// 滚轮（小圆柱，横向）
+const mouseWheel = cyl(0.012, 0.012, 0.022, 0x333333, 0.5, 16);
+mouseWheel.rotation.z = Math.PI / 2;
+mouseWheel.position.set(0.62, DESK_H + 0.275, -DESK_L * 0.20 - 0.01);
+desk.add(mouseWheel);
 
 // 笔筒 + 笔
 const holder = cyl(0.20, 0.19, 0.46, 0xc8a06a); holder.position.set(0.78, DESK_H + 0.31, DESK_L * 0.32); desk.add(holder);
@@ -320,18 +348,17 @@ chair.rotation.y = Math.PI / 2;
 chair.position.set(-4.25, 0, 0);
 scene.add(chair);
 
-// ---------- 龟背竹 B 方案（6 片叶不对称散开、向沙发侧倾斜，沙发左扶手外侧）----------
+// ---------- 普通绿叶盆栽（6 片普通椭圆/水滴形绿叶，整体大小与原 monstera 一致）----------
+// 保持 scale 1.60 + position (-2.2, 0, -5.5) 不变；只把龟背竹羽裂叶换成普通椭圆叶，画面更协调
 const monstera = new THREE.Group();
-// 陶土盆（比仙人掌大）
+// 陶土盆（与上轮一致）
 const mPot = cyl(0.55, 0.42, 1.0, 0xc97650, 0.95);
 mPot.position.set(0, 0.50, 0);
 mPot.castShadow = true; mPot.receiveShadow = true;
 monstera.add(mPot);
-// 盆口薄沿
 const mPotRim = cyl(0.58, 0.58, 0.07, 0xb56843, 0.95);
 mPotRim.position.set(0, 1.04, 0);
 monstera.add(mPotRim);
-// 土壤层
 const mSoil = cyl(0.52, 0.52, 0.05, 0x4a3320, 1.0);
 mSoil.position.set(0, 1.10, 0);
 monstera.add(mSoil);
@@ -340,39 +367,30 @@ const mStem = cyl(0.10, 0.13, 2.2, 0x5a3f2a, 0.85);
 mStem.position.set(0, 2.20, 0);
 mStem.castShadow = true;
 monstera.add(mStem);
-// 龟背竹叶片：每片用 ShapeGeometry（带羽裂洞）做大叶
-function makeMonsteraLeaf() {
+// 普通绿叶：每片用水滴形 ShapeGeometry（顶端尖、底部圆），不挖洞
+function makeOvalLeaf() {
   const shape = new THREE.Shape();
-  shape.absarc(0, 0, 0.78, 0, Math.PI * 2, false);
-  // 中心小孔（茎连接点）
-  shape.holes.push(new THREE.Path().absarc(0, 0, 0.12, 0, Math.PI * 2, true));
-  // 6 个羽裂侧孔（龟背竹标志）
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + 0.15;
-    const cx = Math.cos(a) * 0.42;
-    const cy = Math.sin(a) * 0.42;
-    const hole = new THREE.Path();
-    hole.absarc(cx, cy, 0.16, 0, Math.PI * 2, true);
-    shape.holes.push(hole);
-  }
+  // 水滴形：底部圆弧收尾，顶部尖收尾
+  shape.moveTo(0, 0.78);                       // 顶部尖
+  shape.bezierCurveTo(0.55, 0.55, 0.62, 0.0, 0, -0.62);  // 右侧
+  shape.bezierCurveTo(-0.62, 0.0, -0.55, 0.55, 0, 0.78); // 左侧回到顶
   return new THREE.ShapeGeometry(shape, 24);
 }
 const leafMat = new THREE.MeshStandardMaterial({
-  color: 0x3a7a4a, roughness: 0.6, metalness: 0.05, side: THREE.DoubleSide
+  color: 0x4a8a5a, roughness: 0.55, metalness: 0.05, side: THREE.DoubleSide
 });
-// 6 片叶 B 方案：不对称 + 向沙发（+x 方向）侧倾斜，整体错落有动感
+// 6 片叶错落摆放（高度和方向错开）
 const leafConfigs = [
-  { y: 1.40, a: 0.30, tilt: -0.25, leanX: 0.20, s: 1.10 },  // 低位大叶，偏沙发
-  { y: 1.75, a: 1.10, tilt: -0.05, leanX: 0.30, s: 1.20 },  // 主叶，最大，向沙发侧探
-  { y: 2.10, a: 1.85, tilt:  0.18, leanX: 0.18, s: 1.15 },  // 中部
-  { y: 2.45, a: 2.55, tilt:  0.38, leanX: 0.05, s: 1.05 },  // 高位前倾
-  { y: 2.75, a: 3.30, tilt:  0.55, leanX: 0.00, s: 0.95 },  // 顶前
-  { y: 2.95, a: 4.20, tilt:  0.65, leanX: 0.00, s: 0.85 }   // 顶小
+  { y: 1.40, a: 0.30, tilt: -0.25, leanX: 0.20, s: 1.10 },
+  { y: 1.75, a: 1.10, tilt: -0.05, leanX: 0.30, s: 1.20 },
+  { y: 2.10, a: 1.85, tilt:  0.18, leanX: 0.18, s: 1.15 },
+  { y: 2.45, a: 2.55, tilt:  0.38, leanX: 0.05, s: 1.05 },
+  { y: 2.75, a: 3.30, tilt:  0.55, leanX: 0.00, s: 0.95 },
+  { y: 2.95, a: 4.20, tilt:  0.65, leanX: 0.00, s: 0.85 }
 ];
 leafConfigs.forEach(cfg => {
-  const leaf = new THREE.Mesh(makeMonsteraLeaf(), leafMat);
+  const leaf = new THREE.Mesh(makeOvalLeaf(), leafMat);
   leaf.position.set(Math.cos(cfg.a) * 0.28, cfg.y, Math.sin(cfg.a) * 0.28);
-  // 让叶面朝外（径向）+ 偏沙发侧
   leaf.lookAt(
     Math.cos(cfg.a) * 1.5 + cfg.leanX,
     cfg.y + Math.sin(cfg.tilt) * 0.5,
@@ -384,8 +402,8 @@ leafConfigs.forEach(cfg => {
   leaf.receiveShadow = true;
   monstera.add(leaf);
 });
-monstera.scale.setScalar(1.60);  // 整体放大（原仙人掌小巧，龟背竹要大气）
-monstera.position.set(-2.2, 0, -5.5);  // 沙发左扶手外侧
+monstera.scale.setScalar(1.60);  // 整体大小与上轮一致
+monstera.position.set(-2.2, 0, -5.5);
 scene.add(monstera);
 
 // ---------- 墙上挂画（用户提供的爬山图）----------
