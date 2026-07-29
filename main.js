@@ -166,13 +166,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(3.0, 6.5, 3.0);  // v16：球心 = 碗口平面 y=6.5（v14 还原；碗口朝下，碗底 y=7.05 朝天）
+arcShade.position.set(3.0, 5.95, 3.0);  // v17：球心 = 碗口平面 y=5.95（v16 的 6.5 下移 0.55）；碗底（球极点）= 球心 + 半径 0.55 = 6.5（用户要求碗底改到 6.5）；碗口朝下
 // arcShade.rotation.x = 0;  // 不旋转，默认开口朝下（朝 -y，照桌面）—— v12 修复
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（碗口边缘装饰）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(3.0, 6.5, 3.0);  // v16：碗口边缘 y=6.5（v14 还原；与球心同高 = 开口平面；与灯杆顶面 y=6.5 接触）
+arcShadeRing.position.set(3.0, 5.95, 3.0);  // v17：碗口边缘 y=5.95（与球心同高 = 开口平面；灯杆顶面 y=6.5 正好接触碗底/球极点 =6.5）
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）—— 灯泡挂在碗内
 const arcBulb = new THREE.Mesh(
