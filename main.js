@@ -134,13 +134,14 @@ arcBase.position.set(0, 0.03, 0);
 arcBase.material.metalness = 0.4;
 arcLamp.add(arcBase);
 // 弧形金属杆：从底座先垂直上升，再自然往外水平延伸至灯罩（更有弧度的优雅曲线）
-// 灯座在房间中后偏左（不再贴墙），弧杆从底座垂直升起 ~4.5，再水平弯出到灯罩位置
+// 灯座在房间中后偏左（不再贴墙），弧杆从底座垂直升起，再水平弯出到灯罩位置
+// 本轮（v10）：整体杆子高度+1/5，灯罩同步抬高到 y=7.0（+1 单位）
 const arcCurve = new THREE.CatmullRomCurve3([
-  new THREE.Vector3(0, 0.06, 0),       // 底座中心
-  new THREE.Vector3(0.15, 2.0, 0.15),  // 先垂直上升（几乎不外扩）
-  new THREE.Vector3(0.30, 4.5, 0.30),  // 弧杆高点（仍接近垂直）
-  new THREE.Vector3(1.5, 5.7, 1.5),    // 开始水平弯出
-  new THREE.Vector3(3.0, 5.45, 3.0)    // 灯罩底部开口位置（灯杆末端"插入"灯罩里，视觉自然连接）
+  new THREE.Vector3(0, 0.07, 0),       // 底座中心（+1/5）
+  new THREE.Vector3(0.18, 2.4, 0.18),  // 先垂直上升（+1/5）
+  new THREE.Vector3(0.36, 5.4, 0.36),  // 弧杆高点（+1/5）
+  new THREE.Vector3(1.5, 6.4, 1.5),    // 开始水平弯出（+1/5）
+  new THREE.Vector3(3.0, 6.45, 3.0)    // 灯罩底部开口位置（灯杆末端"插入"灯罩里，视觉自然连接）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -156,13 +157,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(3.0, 6.0, 3.0);  // 灯罩中心（灯杆末端 5.45 高度"插入"灯罩底部开口）
-arcShade.rotation.x = Math.PI; // 开口朝下
+arcShade.position.set(3.0, 7.0, 3.0);  // 灯罩中心（灯杆末端 6.45 高度"插入"灯罩底部开口；中心 y=7.0 整体抬高 1.0）
+arcShade.rotation.x = Math.PI; // 开口朝下（经典钓鱼灯形态，照桌面）
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（增加细节）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(3.0, 5.45, 3.0);  // 灯罩底部边缘
+arcShadeRing.position.set(3.0, 6.45, 3.0);  // 灯罩底部边缘（跟灯杆末端同 y，"插入"连接）
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）
 const arcBulb = new THREE.Mesh(
@@ -172,7 +173,7 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(3.0, 5.75, 3.0);
+arcBulb.position.set(3.0, 6.8, 3.0);  // 灯头（灯罩内 y=6.8）
 arcLamp.add(arcBulb);
 // 位置：房间中后偏左（从墙角往中央挪 2.5，灯更偏房间中心），弧形杆垂直上升后水平延伸
 arcLamp.position.set(-4.5, 0, -4.5);
@@ -192,7 +193,7 @@ for (let r = 0; r < 3; r++) {
     handle.position.set(fx, fy, 0.83); cabinet.add(handle);
   }
 }
-cabinet.position.set(4.0, 0, -6.6);  // 往沙发方向挪 2.2（沙发 x=1.1，沙发右扶手外缘 x=1.775；柜左缘 x=4.0-1.4=2.6，间隙 0.825 不重叠）
+cabinet.position.set(6.0, 0, -6.6);  // 往沙发右侧挪 2.0（沙发右扶手外缘 x=4.29，柜左缘 x=4.5，间隙 0.21 紧贴但不重叠）
 scene.add(cabinet);
 
 // ---------- 书桌（长边贴窗）----------
@@ -410,7 +411,7 @@ scene.add(monstera);
 
 // ---------- 墙上挂画（用户提供的爬山图）----------
 const wallArtGroup = new THREE.Group();
-wallArtGroup.position.set(0, 6.4, -7.78);
+wallArtGroup.position.set(2.0, 6.4, -7.78);  // 水平往右挪 2.0（在沙发右半上方）
 scene.add(wallArtGroup);
 const wallFrame = new THREE.Mesh(
   new THREE.BoxGeometry(1, 1, 0.18),
