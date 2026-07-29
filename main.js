@@ -140,12 +140,15 @@ arcLamp.add(arcBase);
 // 本轮（v13）：整体下降 0.5（灯杆顶 y=6.5、灯罩 y=6.5、灯泡 y=6.68）—— 让灯罩离桌面/挂画更近，视觉层次更好
 // 本轮（v15）：灯罩/灯泡/灯罩下沿环/灯杆末端控制点 y 全部 -0.8（其余 4 个灯杆控制点不动）
 //               灯杆末端从 (3.0, 6.5, 3.0) 下垂到 (3.0, 5.7, 3.0)，末段微垂挂住碗口；灯杆前 4 段弧度形态完全保留
+// 本轮（v16）：仅灯泡保留 v15 位置 y=5.88；灯杆末端控制点 + 灯罩球心 + 灯罩下沿环 全部还原到 v14 的 y=6.5
+//               灯罩回到 v14 原位（开口朝下、球心 y=6.5、碗底 y=7.05），灯泡单独下垂到 y=5.88 = 碗口下方 0.62 单位（外露爱迪生灯泡效果）
+//               灯杆前 4 段：不动
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.07, 0),       // 底座中心（保持贴地，未动）
   new THREE.Vector3(0.18, 1.9, 0.18),  // 先垂直上升（未动）
   new THREE.Vector3(0.36, 4.9, 0.36),  // 弧杆高点（未动）
   new THREE.Vector3(1.5, 6.45, 1.5),   // 开始水平弯出（未动）
-  new THREE.Vector3(3.0, 5.7, 3.0)     // 灯罩碗口位置（v15: y 6.5 → 5.7，下移 0.8；灯杆顶面"插入"碗口平面 y=5.7）
+  new THREE.Vector3(3.0, 6.5, 3.0)     // 灯罩碗口位置（v16: 从 v15 的 5.7 还原到 v14 的 6.5；灯杆顶面"插入"碗口平面 y=6.5）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -163,13 +166,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(3.0, 5.7, 3.0);  // v15：球心 = 碗口平面 y=5.7（v13 的 6.5 下移 0.8；碗口朝下，碗底 y=6.25 朝天）
+arcShade.position.set(3.0, 6.5, 3.0);  // v16：球心 = 碗口平面 y=6.5（v14 还原；碗口朝下，碗底 y=7.05 朝天）
 // arcShade.rotation.x = 0;  // 不旋转，默认开口朝下（朝 -y，照桌面）—— v12 修复
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（碗口边缘装饰）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(3.0, 5.7, 3.0);  // v15：碗口边缘 y=5.7（与球心同高 = 开口平面；与灯杆顶面 y=5.7 接触）
+arcShadeRing.position.set(3.0, 6.5, 3.0);  // v16：碗口边缘 y=6.5（v14 还原；与球心同高 = 开口平面；与灯杆顶面 y=6.5 接触）
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）—— 灯泡挂在碗内
 const arcBulb = new THREE.Mesh(
@@ -179,7 +182,7 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(3.0, 5.88, 3.0);  // v15：灯泡在碗内（碗口 y=5.7 上方 0.18 = 碗底 y=6.25 下方 0.37，被碗罩住）
+arcBulb.position.set(3.0, 5.88, 3.0);  // v16：灯泡保留 v15 位置 y=5.88（碗口 y=6.5 下方 0.62 单位 = 灯罩外露下垂到碗口下方 0.62 = 爱迪生灯泡外露效果）
 arcLamp.add(arcBulb);
 // 位置：房间中后偏左（从墙角往中央挪 2.5，灯更偏房间中心），弧形杆垂直上升后水平延伸
 arcLamp.position.set(-4.5, 0, -4.5);
