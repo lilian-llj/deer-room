@@ -40,6 +40,9 @@
   .photo .cam { font-size: 22px; opacity: .7; }
   .photo .t { font-size: 10.5px; font-weight: 600; }
   .photo .s { font-size: 9px; opacity: .85; }
+  /* 真实照片：去除虚框，铺满 3:4 区域 */
+  .photo.has-real { border-style: solid; border-color: rgba(201,138,94,.5); padding: 0; overflow: hidden; }
+  .photo.has-real img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
   .welcome {
     text-align: center; font-size: 12px; line-height: 1.55; color: #5a4632;
     background: rgba(255,255,255,.6); border-radius: 10px; padding: 8px 10px;
@@ -84,10 +87,8 @@
 
 <!-- 右侧常驻信息面板（静态版：照片虚框 + 欢迎语 + Room Map 导航） -->
 <aside id="side-panel">
-  <div class="photo">
-    <div class="cam">📷</div>
-    <div class="t">你的真实照片（虚框占位）</div>
-    <div class="s">后期替换为 3:4 真实照片</div>
+  <div class="photo has-real">
+    <img src="./assets/photo/portrait.jpg" alt="lilian 真实照片" loading="eager" />
   </div>
 
   <div class="welcome">欢迎来到 <b>lilian</b> 创作的小鹿 room，<br>在这里，你可以更加了解我</div>
