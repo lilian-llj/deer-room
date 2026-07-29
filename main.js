@@ -134,11 +134,12 @@ arcBase.position.set(0, 0.03, 0);
 arcBase.material.metalness = 0.4;
 arcLamp.add(arcBase);
 // 弧形金属杆：从底座向上、向外弧出到灯罩位置
+// 灯座在房间左前角，弧杆一路向房间中心延伸至桌子右前方/沙发左前上方
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.06, 0),       // 底座中心
-  new THREE.Vector3(-0.2, 2.0, 0.3),   // 弧顶（向外）
-  new THREE.Vector3(-0.6, 3.6, 0.4),   // 灯罩前方
-  new THREE.Vector3(-1.2, 3.4, 0.3)    // 灯罩位置
+  new THREE.Vector3(1.0, 1.7, -1.5),   // 上弧（向房间中部）
+  new THREE.Vector3(2.5, 2.5, -4.0),   // 弧顶
+  new THREE.Vector3(5.5, 2.9, -7.0)    // 灯罩位置（world ≈ (-1, 2.9, -1)）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -154,13 +155,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(-1.2, 3.4, 0.3);
+arcShade.position.set(5.5, 2.9, -7.0);
 arcShade.rotation.x = Math.PI; // 开口朝下
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（增加细节）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(-1.2, 2.86, 0.3);
+arcShadeRing.position.set(5.5, 2.56, -7.0);
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）
 const arcBulb = new THREE.Mesh(
@@ -170,10 +171,10 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(-1.2, 2.95, 0.3);
+arcBulb.position.set(5.5, 2.65, -7.0);
 arcLamp.add(arcBulb);
-// 位置：放在房间右后墙角，弧形杆向沙发左前侧延伸（沙发左扶手外侧附近）
-arcLamp.position.set(5.5, 0, -7.0);
+// 位置：房间左前角，弧形杆向房间中心延伸（灯罩悬停在桌子右前方/沙发左前上方）
+arcLamp.position.set(-6.5, 0, 6.0);
 scene.add(arcLamp);
 
 // ---------- 六抽屉柜（招牌家具，靠后墙右侧）----------
@@ -475,14 +476,14 @@ texLoader.load(
 
 // 加载毛茸茸苔藓地毯（沙发前面）
 const mossRug = new THREE.Mesh(
-  new THREE.PlaneGeometry(2.4, 2.4),
+  new THREE.PlaneGeometry(4.0, 4.0),   // 放大到对齐沙发宽（沙发座 4×1.9 → 地毯 4×4 等比例放大）
   new THREE.MeshStandardMaterial({
     transparent: true, alphaTest: 0.45, side: THREE.DoubleSide,
     roughness: 0.95, metalness: 0
   })
 );
 mossRug.rotation.x = -Math.PI / 2;
-mossRug.position.set(1.4, 0.018, -3.6);  // 沙发前侧、紧挨沙发
+mossRug.position.set(1.4, 0.018, -4.0);  // 居中 x=1.4 对齐沙发中线，z=-4 紧贴沙发前缘（沙发前缘 z=-5.05）
 mossRug.receiveShadow = true;
 scene.add(mossRug);
 texLoader.load(
