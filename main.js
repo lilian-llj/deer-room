@@ -203,18 +203,18 @@ scene.add(cabinet);
 // ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱）
 // v11：桌子左侧 x=-7.0；
 // v12：挪到桌子正前方贴左墙 + 整体放大 5 倍（在 -6.5, 0, +2.2）；
-// v13（本轮）：①整体缩小 1/2（scale 5 → 2.5）②往 +Z 外移 1.3m（z=2.2 → 3.5）避开桌子前缘 z=+1.5 重叠 ③绕 y 旋转 90°（立柱跨距从 x 方向改到 z 方向，shelf 长边 0.5 沿 z 沿墙面方向，CD 面朝左）
-// 位置：magazineRack 中心 (-6.5, 0, +3.5)，立柱 ±0.22×scale 沿 z 方向，shelf 长边 0.5×scale 沿 z 方向
-// 长边（0.5）沿 z 方向 = 沿前后方向 = 沿墙面方向 = "长边靠墙"（沿墙面方向）✓
+// v13：缩小 1/2（scale→2.5）+ 往 +Z 外移（z→3.5）+ 绕 y 旋转 90°（长边沿 z 靠墙）；
+// v14（本轮）：①位置 x-0.5→-7.0、z+2→5.5；②长边 0.5→1.0（几何加宽，scale 仍 2.5 → 世界长边 2.5m = v13 1.25m 的 2 倍，高度 5.18m 不变）；③物件沿长边均匀铺开不拥挤；④书比例改 3:4
+// 位置：中心 (-7.0, 0, +5.5)，立柱 ±0.50×scale 沿 z，shelf 长边 1.0×scale=2.5m 沿 z（平行左墙=长边靠墙）✓
 const magazineRack = new THREE.Group();
-magazineRack.position.set(-6.5, 0, 3.5);
-magazineRack.scale.setScalar(2.5);  // v13：整体缩小 1/2（原 5 倍 → 2.5 倍，原 10.35m 高 → 5.18m 高）
-magazineRack.rotation.y = Math.PI / 2;  // v13：绕 y 旋转 90°（立柱跨距从 x 方向改到 z 方向，shelf 长边沿 z）
+magazineRack.position.set(-7.0, 0, 5.5);
+magazineRack.scale.setScalar(2.5);  // v13 定标 2.5（高 5.18m）；v14 仅加宽长边几何，高度/缩放不变
+magazineRack.rotation.y = Math.PI / 2;  // v13：绕 y 旋转 90°（shelf 长边沿 z 靠墙）
 const ironMat = new THREE.MeshStandardMaterial({
   color: 0x121212, roughness: 0.45, metalness: 0.75
 });
 // 2 根立柱（黑色铁艺）
-[-0.22, 0.22].forEach(x => {
+[-0.50, 0.50].forEach(x => {
   const pole = new THREE.Mesh(
     new THREE.CylinderGeometry(0.018, 0.018, 1.85, 12),
     ironMat
@@ -225,7 +225,7 @@ const ironMat = new THREE.MeshStandardMaterial({
 });
 // 顶半圆拱（拱门造型）
 const arch = new THREE.Mesh(
-  new THREE.TorusGeometry(0.22, 0.018, 10, 32, Math.PI),
+  new THREE.TorusGeometry(0.50, 0.018, 10, 32, Math.PI),
   ironMat
 );
 arch.rotation.x = Math.PI;  // 半圆开口朝下
@@ -236,7 +236,7 @@ magazineRack.add(arch);
 const SHELF_LEVELS = [0.18, 0.63, 1.08, 1.53];
 SHELF_LEVELS.forEach(y => {
   const shelf = new THREE.Mesh(
-    new THREE.BoxGeometry(0.50, 0.025, 0.25),
+    new THREE.BoxGeometry(1.00, 0.025, 0.25),
     ironMat
   );
   shelf.position.set(0, y, 0);
@@ -247,7 +247,7 @@ SHELF_LEVELS.forEach(y => {
   //      凸出 +z 方向（朝相机），所以挡条也要相应调整：原 z=+0.115 改 z=-0.115
   //      旋转后挡条凸出 -x 方向（远离桌子）= 防止 slot 朝 -z 方向（旋转后 -x 方向）滑出 ✓
   const rail = new THREE.Mesh(
-    new THREE.BoxGeometry(0.50, 0.025, 0.02),
+    new THREE.BoxGeometry(1.00, 0.025, 0.02),
     ironMat
   );
   rail.position.set(0, y + 0.06, -0.115);
@@ -255,7 +255,7 @@ SHELF_LEVELS.forEach(y => {
 });
 // 底部踢脚（架子底座）
 const rackBase = new THREE.Mesh(
-  new THREE.BoxGeometry(0.52, 0.05, 0.27),
+  new THREE.BoxGeometry(1.02, 0.05, 0.27),
   ironMat
 );
 rackBase.position.set(0, 0.025, 0);
@@ -379,22 +379,22 @@ function makeMagItem(filename, label, type, w, h, x, y, z) {
   return grp;
 }
 
-// 物件摆放规则（每层 slot 位置 x 范围 [-0.18, +0.18]）
-// v13：rotation.y = π/2 后，CD 凸出方向从 +z（朝相机）旋转成 +x（朝桌子方向）。
-//       所以把 z=0.115 偏移从 z 轴移到 x 轴（每个 slot 的 x -= 0.115，z 改 0），
-//       旋转后 CD 凸出方向恢复到 +z（朝相机）✓
+// 物件摆放规则（v14：长边 2x 加宽后，slot 沿 x 均匀铺开，黑胶/专辑/书籍不再拥挤）
+// 说明：magazineRack 已 rotation.y = π/2，物件凸出 +z 局部 → 旋后 +x 世界（朝相机）。
+//       slot 的 x 即沿搁板长边（世界 z）的位置；z 固定 0（搁板中心深度）。
 // 第 1 层（y=1.53）：1 圆形黑胶 + 1 方形专辑
-magazineRack.add(makeMagItem('record-1.png', 'Record 1', 'record', 0.34, 0.34, -0.11 - 0.115, 1.53 + 0.18, 0));
-magazineRack.add(makeMagItem('album-1.png',   'Album 1',  'album',  0.20, 0.20,  0.10 - 0.115, 1.53 + 0.10, 0));
-// 第 2 层（y=1.08）：2 本长方形书
-magazineRack.add(makeMagItem('book-1.png', 'Book 1', 'book', 0.12, 0.28, -0.10 - 0.115, 1.08 + 0.14, 0));
-magazineRack.add(makeMagItem('book-2.png', 'Book 2', 'book', 0.12, 0.28,  0.08 - 0.115, 1.08 + 0.14, 0));
-// 第 3 层（y=0.63）：2 方形专辑 + 1 本书
-magazineRack.add(makeMagItem('album-2.png', 'Album 2', 'album', 0.18, 0.18, -0.15 - 0.115, 0.63 + 0.09, 0));
-magazineRack.add(makeMagItem('album-3.png', 'Album 3', 'album', 0.18, 0.18,  0.02 - 0.115, 0.63 + 0.09, 0));
-magazineRack.add(makeMagItem('book-3.png',  'Book 3',  'book',  0.10, 0.24,  0.16 - 0.115, 0.63 + 0.12, 0));
-// 第 4 层（y=0.18）：1 圆形黑胶 + 1 方形专辑
-magazineRack.add(makeMagItem('record-2.png', 'Record 2', 'record', 0.32, 0.32, -0.10 - 0.115, 0.18 + 0.17, 0));
+magazineRack.add(makeMagItem('record-1.png', 'Record 1', 'record', 0.34, 0.34, -0.25, 1.53 + 0.17, 0));
+magazineRack.add(makeMagItem('album-1.png',   'Album 1',  'album',  0.20, 0.20,  0.25, 1.53 + 0.10, 0));
+// 第 2 层（y=1.08）：2 本长方形书（比例 3:4）
+magazineRack.add(makeMagItem('book-1.png', 'Book 1', 'book', 0.18, 0.24, -0.22, 1.08 + 0.12, 0));
+magazineRack.add(makeMagItem('book-2.png', 'Book 2', 'book', 0.18, 0.24,  0.22, 1.08 + 0.12, 0));
+// 第 3 层（y=0.63）：2 方形专辑 + 1 本书（书比例 3:4）
+magazineRack.add(makeMagItem('album-2.png', 'Album 2', 'album', 0.18, 0.18, -0.35, 0.63 + 0.09, 0));
+magazineRack.add(makeMagItem('book-3.png',  'Book 3',  'book',  0.18, 0.24,  0.00, 0.63 + 0.12, 0));
+magazineRack.add(makeMagItem('album-3.png', 'Album 3', 'album', 0.18, 0.18,  0.35, 0.63 + 0.09, 0));
+// 第 4 层（y=0.18）：1 圆形黑胶 + 1 方形专辑（补回原设计的第 9 个 slot album-4）
+magazineRack.add(makeMagItem('record-2.png', 'Record 2', 'record', 0.32, 0.32, -0.25, 0.18 + 0.16, 0));
+magazineRack.add(makeMagItem('album-4.png',  'Album 4',  'album',  0.18, 0.18,  0.25, 0.18 + 0.09, 0));
 magazineRack.add(makeMagItem('album-4.png',  'Album 4',  'album',  0.18, 0.18,  0.11 - 0.115, 0.18 + 0.09, 0));
 
 // ---------- 书桌（长边贴窗）----------
