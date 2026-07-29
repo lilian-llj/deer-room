@@ -126,20 +126,20 @@ sofa.scale.setScalar(1.5);
 sofa.position.set(1.4, 0, -6);
 scene.add(sofa);
 
-// ---------- 钓鱼灯（弧形金属杆 + 橙色半圆灯罩，灯座落左后墙角，弧形杆向房间中心延伸）----------
+// ---------- 钓鱼灯（弧形金属杆 + 橙色半圆灯罩，灯座落左后墙角，弧形杆向房间中心延伸，灯罩悬停红线高度 y=4.0）----------
 const arcLamp = new THREE.Group();
 // 圆盘底座（深灰金属）
 const arcBase = cyl(0.42, 0.45, 0.06, 0x4a4a4a, 0.5);
 arcBase.position.set(0, 0.03, 0);
 arcBase.material.metalness = 0.4;
 arcLamp.add(arcBase);
-// 弧形金属杆：从底座向上、向外弧出到灯罩位置
-// 灯座在房间左后墙角（对角线三线交汇处），弧杆一路向房间中心延伸至桌子右前方/沙发左前方
+// 弧形金属杆：从底座向上、向外弧出到灯罩位置（缩短 + 抬高到红线 y=4.0）
+// 灯座在房间左后墙角（对角线三线交汇处），弧杆一路向房间中心延伸，灯罩 world 落地 (-4, 4.0, -4)
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.06, 0),       // 底座中心
-  new THREE.Vector3(1.5, 2.0, 1.5),    // 上弧（向房间中部）
-  new THREE.Vector3(3.5, 3.0, 3.5),    // 弧顶
-  new THREE.Vector3(6.0, 2.9, 6.0)     // 灯罩位置（world ≈ (-1, 2.9, -1)）
+  new THREE.Vector3(0.8, 1.5, 0.8),    // 上弧（缩短）
+  new THREE.Vector3(1.8, 3.0, 1.8),    // 弧顶
+  new THREE.Vector3(3.0, 4.0, 3.0)     // 灯罩位置（红线高度 y=4.0；world ≈ (-4, 4.0, -4)）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -155,13 +155,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(6.0, 2.9, 6.0);
+arcShade.position.set(3.0, 4.0, 3.0);
 arcShade.rotation.x = Math.PI; // 开口朝下
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（增加细节）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(6.0, 2.56, 6.0);
+arcShadeRing.position.set(3.0, 3.66, 3.0);
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）
 const arcBulb = new THREE.Mesh(
@@ -171,7 +171,7 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(6.0, 2.65, 6.0);
+arcBulb.position.set(3.0, 3.75, 3.0);
 arcLamp.add(arcBulb);
 // 位置：房间左后墙角（对角线三线交汇处 = 左墙 + 后墙 + 地板），弧形杆向房间中心延伸
 arcLamp.position.set(-7, 0, -7);
@@ -235,7 +235,7 @@ const macNotch = box(0.02, 0.04, 0.12, 0x1a1a1a, 0.7);
 macNotch.position.set(-0.30, 0.69, 0);
 macNotch.rotation.x = -0.18;
 macbook.add(macNotch);
-macbook.position.set(0, DESK_H, -0.15);  // 桌子中心偏后一点
+macbook.position.set(0, DESK_H + 0.20, -0.15);  // 抬高 0.20（桌面顶 y=3.14，底座顶 y=3.26 浮在桌面上）
 desk.add(macbook);
 
 // 【玻璃水杯 + 2/3 水】
@@ -267,12 +267,12 @@ const macMouse = new THREE.Mesh(
   new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.15 })
 );
 macMouse.scale.set(1.0, 0.35, 1.5);  // x 扁、y 矮、z 长
-macMouse.position.set(0.55, DESK_H + 0.035, -DESK_L * 0.20);
+macMouse.position.set(0.55, DESK_H + 0.20, -DESK_L * 0.20);  // 抬高 0.20（鼠标底 y=3.165 > 桌面顶 3.14）
 macMouse.castShadow = true;
 desk.add(macMouse);
 // 鼠标表面有一条分隔线（白色细条模拟感应区）
 const mouseLine = box(0.005, 0.002, 0.15, 0xcccccc, 0.4);
-mouseLine.position.set(0.55, DESK_H + 0.07, -DESK_L * 0.20);
+mouseLine.position.set(0.55, DESK_H + 0.235, -DESK_L * 0.20);  // 跟随鼠标抬高
 desk.add(mouseLine);
 
 // 笔筒 + 笔
@@ -301,7 +301,7 @@ scene.add(desk);
 const chair = new THREE.Group();
 const CH = 0x1c1c1c;
 const chSeatH = (DESK_H - 0.7) * (2/3);
-const chScale = 1.35;
+const chScale = 1.55;  // 加宽（原 1.35 → 1.55，约 +15%）
 const chSeat = box(1.08 * chScale, 0.20, 1.08 * chScale, CH, 0.6);
 chSeat.position.set(0, chSeatH, 0); chair.add(chSeat);
 const chBack = box(1.08 * chScale, 1.25 * chScale, 0.20, CH, 0.6);
@@ -316,53 +316,77 @@ const chLegH = chSeatH - 0.10;
   chLeg.position.set(x, chLegH / 2, z); chair.add(chLeg);
 });
 chair.rotation.y = Math.PI / 2;
-chair.position.set(-4.7, 0, 0);
+// 加宽后椅子深度 = 1.08*1.55 = 1.67，原位 -4.7 时左缘 x=-5.535 会撞桌子右缘 -5.15；往 +x 挪 0.45 → -4.25，左缘 -5.085 不撞
+chair.position.set(-4.25, 0, 0);
 scene.add(chair);
 
-// ---------- 仙人掌（小型绿植，沙发左扶手外侧，3 段堆叠 + 白刺）----------
-const cactus = new THREE.Group();
-// 陶土盆
-const cPot = cyl(0.28, 0.22, 0.45, 0xc97650, 0.95);
-cPot.position.set(0, 0.22, 0);
-cPot.castShadow = true; cPot.receiveShadow = true;
-cactus.add(cPot);
+// ---------- 龟背竹 B 方案（6 片叶不对称散开、向沙发侧倾斜，沙发左扶手外侧）----------
+const monstera = new THREE.Group();
+// 陶土盆（比仙人掌大）
+const mPot = cyl(0.55, 0.42, 1.0, 0xc97650, 0.95);
+mPot.position.set(0, 0.50, 0);
+mPot.castShadow = true; mPot.receiveShadow = true;
+monstera.add(mPot);
 // 盆口薄沿
-const cPotRim = cyl(0.30, 0.30, 0.05, 0xb56843, 0.95);
-cPotRim.position.set(0, 0.47, 0);
-cactus.add(cPotRim);
+const mPotRim = cyl(0.58, 0.58, 0.07, 0xb56843, 0.95);
+mPotRim.position.set(0, 1.04, 0);
+monstera.add(mPotRim);
 // 土壤层
-const cSoil = cyl(0.26, 0.26, 0.03, 0x4a3320, 1.0);
-cSoil.position.set(0, 0.49, 0);
-cactus.add(cSoil);
-// 仙人掌主体（3 段绿色球体堆叠）
-const cactusMat = new THREE.MeshStandardMaterial({
-  color: 0x5fa830, roughness: 0.7, metalness: 0.05
-});
-// 底部大球
-const cBody1 = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), cactusMat);
-cBody1.position.set(0, 0.72, 0);
-cBody1.castShadow = true;
-cactus.add(cBody1);
-// 中部球（微偏）
-const cBody2 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12), cactusMat);
-cBody2.position.set(0.04, 0.93, 0.02);
-cBody2.castShadow = true;
-cactus.add(cBody2);
-// 顶部小球（再偏）
-const cBody3 = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), cactusMat);
-cBody3.position.set(-0.02, 1.10, -0.01);
-cBody3.castShadow = true;
-cactus.add(cBody3);
-// 小白刺（8 颗围绕底部球体）
-const spineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
-for (let i = 0; i < 8; i++) {
-  const a = (i / 8) * Math.PI * 2;
-  const spine = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 4), spineMat);
-  spine.position.set(Math.cos(a) * 0.21, 0.72, Math.sin(a) * 0.21);
-  cactus.add(spine);
+const mSoil = cyl(0.52, 0.52, 0.05, 0x4a3320, 1.0);
+mSoil.position.set(0, 1.10, 0);
+monstera.add(mSoil);
+// 主茎
+const mStem = cyl(0.10, 0.13, 2.2, 0x5a3f2a, 0.85);
+mStem.position.set(0, 2.20, 0);
+mStem.castShadow = true;
+monstera.add(mStem);
+// 龟背竹叶片：每片用 ShapeGeometry（带羽裂洞）做大叶
+function makeMonsteraLeaf() {
+  const shape = new THREE.Shape();
+  shape.absarc(0, 0, 0.78, 0, Math.PI * 2, false);
+  // 中心小孔（茎连接点）
+  shape.holes.push(new THREE.Path().absarc(0, 0, 0.12, 0, Math.PI * 2, true));
+  // 6 个羽裂侧孔（龟背竹标志）
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.15;
+    const cx = Math.cos(a) * 0.42;
+    const cy = Math.sin(a) * 0.42;
+    const hole = new THREE.Path();
+    hole.absarc(cx, cy, 0.16, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+  }
+  return new THREE.ShapeGeometry(shape, 24);
 }
-cactus.position.set(-2.2, 0, -5.5);  // 沙发左扶手外侧
-scene.add(cactus);
+const leafMat = new THREE.MeshStandardMaterial({
+  color: 0x3a7a4a, roughness: 0.6, metalness: 0.05, side: THREE.DoubleSide
+});
+// 6 片叶 B 方案：不对称 + 向沙发（+x 方向）侧倾斜，整体错落有动感
+const leafConfigs = [
+  { y: 1.40, a: 0.30, tilt: -0.25, leanX: 0.20, s: 1.10 },  // 低位大叶，偏沙发
+  { y: 1.75, a: 1.10, tilt: -0.05, leanX: 0.30, s: 1.20 },  // 主叶，最大，向沙发侧探
+  { y: 2.10, a: 1.85, tilt:  0.18, leanX: 0.18, s: 1.15 },  // 中部
+  { y: 2.45, a: 2.55, tilt:  0.38, leanX: 0.05, s: 1.05 },  // 高位前倾
+  { y: 2.75, a: 3.30, tilt:  0.55, leanX: 0.00, s: 0.95 },  // 顶前
+  { y: 2.95, a: 4.20, tilt:  0.65, leanX: 0.00, s: 0.85 }   // 顶小
+];
+leafConfigs.forEach(cfg => {
+  const leaf = new THREE.Mesh(makeMonsteraLeaf(), leafMat);
+  leaf.position.set(Math.cos(cfg.a) * 0.28, cfg.y, Math.sin(cfg.a) * 0.28);
+  // 让叶面朝外（径向）+ 偏沙发侧
+  leaf.lookAt(
+    Math.cos(cfg.a) * 1.5 + cfg.leanX,
+    cfg.y + Math.sin(cfg.tilt) * 0.5,
+    Math.sin(cfg.a) * 1.5
+  );
+  leaf.rotateX(cfg.tilt);
+  leaf.scale.setScalar(cfg.s);
+  leaf.castShadow = true;
+  leaf.receiveShadow = true;
+  monstera.add(leaf);
+});
+monstera.scale.setScalar(1.60);  // 整体放大（原仙人掌小巧，龟背竹要大气）
+monstera.position.set(-2.2, 0, -5.5);  // 沙发左扶手外侧
+scene.add(monstera);
 
 // ---------- 墙上挂画（用户提供的爬山图）----------
 const wallArtGroup = new THREE.Group();
@@ -458,7 +482,7 @@ const mossRug = new THREE.Mesh(
   })
 );
 mossRug.rotation.x = -Math.PI / 2;
-mossRug.position.set(1.4, 0.018, -4.0);  // 居中 x=1.4 对齐沙发中线，z=-4 紧贴沙发前缘（沙发前缘 z=-5.05）
+mossRug.position.set(1.4, 0.018, -2.5);  // 居中 x=1.4 对齐沙发中线，z=-2.5 往房间中心挪（沙发前缘 z=-4.6，地毯 4 深 z 范围 [-4.5, -0.5]，沙发下重叠 ≈ 0.1 已无）
 mossRug.receiveShadow = true;
 scene.add(mossRug);
 texLoader.load(
