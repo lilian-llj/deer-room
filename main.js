@@ -192,7 +192,7 @@ for (let r = 0; r < 3; r++) {
     handle.position.set(fx, fy, 0.83); cabinet.add(handle);
   }
 }
-cabinet.position.set(6.2, 0, -6.6);
+cabinet.position.set(4.0, 0, -6.6);  // 往沙发方向挪 2.2（沙发 x=1.1，沙发右扶手外缘 x=1.775；柜左缘 x=4.0-1.4=2.6，间隙 0.825 不重叠）
 scene.add(cabinet);
 
 // ---------- 书桌（长边贴窗）----------
@@ -251,7 +251,7 @@ macApple.position.set(0, 0.39, -0.022);
 macApple.rotation.y = Math.PI;  // 朝外（屏幕背面，朝向相机）
 macScreen.add(macApple);
 macbook.position.set(0, DESK_H + 0.20, -0.15);  // 抬到桌面上方（110° 翻盖后屏幕底部 y=0.197 > 桌面 0 浮在桌面上）
-macbook.rotation.y = -Math.PI / 2;  // 转方向：屏幕朝 +x（椅子方向）
+macbook.rotation.y = Math.PI / 2;  // 转方向：屏幕朝 -x 椅子方向（椅子在桌子 +x 方向，屏幕 normal 指向 -x 面对用户）
 desk.add(macbook);
 
 // 【玻璃水杯 + 2/3 水】保留不动
