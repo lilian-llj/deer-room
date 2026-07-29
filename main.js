@@ -126,7 +126,7 @@ sofa.scale.setScalar(1.5);
 sofa.position.set(1.4, 0, -6);
 scene.add(sofa);
 
-// ---------- 钓鱼灯（弧形金属杆 + 橙色半圆灯罩，摆墙角向沙发前侧延伸）----------
+// ---------- 钓鱼灯（弧形金属杆 + 橙色半圆灯罩，灯座落左后墙角，弧形杆向房间中心延伸）----------
 const arcLamp = new THREE.Group();
 // 圆盘底座（深灰金属）
 const arcBase = cyl(0.42, 0.45, 0.06, 0x4a4a4a, 0.5);
@@ -134,12 +134,12 @@ arcBase.position.set(0, 0.03, 0);
 arcBase.material.metalness = 0.4;
 arcLamp.add(arcBase);
 // 弧形金属杆：从底座向上、向外弧出到灯罩位置
-// 灯座在房间左前角，弧杆一路向房间中心延伸至桌子右前方/沙发左前上方
+// 灯座在房间左后墙角（对角线三线交汇处），弧杆一路向房间中心延伸至桌子右前方/沙发左前方
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.06, 0),       // 底座中心
-  new THREE.Vector3(1.0, 1.7, -1.5),   // 上弧（向房间中部）
-  new THREE.Vector3(2.5, 2.5, -4.0),   // 弧顶
-  new THREE.Vector3(5.5, 2.9, -7.0)    // 灯罩位置（world ≈ (-1, 2.9, -1)）
+  new THREE.Vector3(1.5, 2.0, 1.5),    // 上弧（向房间中部）
+  new THREE.Vector3(3.5, 3.0, 3.5),    // 弧顶
+  new THREE.Vector3(6.0, 2.9, 6.0)     // 灯罩位置（world ≈ (-1, 2.9, -1)）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -155,13 +155,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(5.5, 2.9, -7.0);
+arcShade.position.set(6.0, 2.9, 6.0);
 arcShade.rotation.x = Math.PI; // 开口朝下
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（增加细节）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(5.5, 2.56, -7.0);
+arcShadeRing.position.set(6.0, 2.56, 6.0);
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）
 const arcBulb = new THREE.Mesh(
@@ -171,10 +171,10 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(5.5, 2.65, -7.0);
+arcBulb.position.set(6.0, 2.65, 6.0);
 arcLamp.add(arcBulb);
-// 位置：房间左前角，弧形杆向房间中心延伸（灯罩悬停在桌子右前方/沙发左前上方）
-arcLamp.position.set(-6.5, 0, 6.0);
+// 位置：房间左后墙角（对角线三线交汇处 = 左墙 + 后墙 + 地板），弧形杆向房间中心延伸
+arcLamp.position.set(-7, 0, -7);
 scene.add(arcLamp);
 
 // ---------- 六抽屉柜（招牌家具，靠后墙右侧）----------
@@ -319,75 +319,50 @@ chair.rotation.y = Math.PI / 2;
 chair.position.set(-4.7, 0, 0);
 scene.add(chair);
 
-// ---------- 龟背竹（沙发左扶手外侧，深绿羽裂叶 + 棕色主茎）----------
-const monstera = new THREE.Group();
+// ---------- 仙人掌（小型绿植，沙发左扶手外侧，3 段堆叠 + 白刺）----------
+const cactus = new THREE.Group();
 // 陶土盆
-const mPot = cyl(0.48, 0.36, 0.85, 0xc97650, 0.95);
-mPot.position.set(0, 0.42, 0);
-mPot.castShadow = true; mPot.receiveShadow = true;
-monstera.add(mPot);
+const cPot = cyl(0.28, 0.22, 0.45, 0xc97650, 0.95);
+cPot.position.set(0, 0.22, 0);
+cPot.castShadow = true; cPot.receiveShadow = true;
+cactus.add(cPot);
 // 盆口薄沿
-const mPotRim = cyl(0.50, 0.50, 0.06, 0xb56843, 0.95);
-mPotRim.position.set(0, 0.86, 0);
-monstera.add(mPotRim);
+const cPotRim = cyl(0.30, 0.30, 0.05, 0xb56843, 0.95);
+cPotRim.position.set(0, 0.47, 0);
+cactus.add(cPotRim);
 // 土壤层
-const mSoil = cyl(0.46, 0.46, 0.04, 0x4a3320, 1.0);
-mSoil.position.set(0, 0.88, 0);
-monstera.add(mSoil);
-// 主茎
-const mStem = cyl(0.06, 0.08, 1.8, 0x5a3f2a, 0.85);
-mStem.position.set(0, 1.82, 0);
-mStem.castShadow = true;
-monstera.add(mStem);
-// 龟背竹叶片：每片用 ShapeGeometry（带羽裂洞）做深绿大叶
-function makeMonsteraLeaf() {
-  const shape = new THREE.Shape();
-  shape.absarc(0, 0, 0.62, 0, Math.PI * 2, false);
-  // 中心小孔（茎连接点）
-  shape.holes.push(new THREE.Path().absarc(0, 0, 0.10, 0, Math.PI * 2, true));
-  // 6 个羽裂侧孔（龟背竹标志）
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + 0.1;
-    const cx = Math.cos(a) * 0.34;
-    const cy = Math.sin(a) * 0.34;
-    const hole = new THREE.Path();
-    hole.absarc(cx, cy, 0.13, 0, Math.PI * 2, true);
-    shape.holes.push(hole);
-  }
-  return new THREE.ShapeGeometry(shape, 24);
+const cSoil = cyl(0.26, 0.26, 0.03, 0x4a3320, 1.0);
+cSoil.position.set(0, 0.49, 0);
+cactus.add(cSoil);
+// 仙人掌主体（3 段绿色球体堆叠）
+const cactusMat = new THREE.MeshStandardMaterial({
+  color: 0x5fa830, roughness: 0.7, metalness: 0.05
+});
+// 底部大球
+const cBody1 = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), cactusMat);
+cBody1.position.set(0, 0.72, 0);
+cBody1.castShadow = true;
+cactus.add(cBody1);
+// 中部球（微偏）
+const cBody2 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12), cactusMat);
+cBody2.position.set(0.04, 0.93, 0.02);
+cBody2.castShadow = true;
+cactus.add(cBody2);
+// 顶部小球（再偏）
+const cBody3 = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), cactusMat);
+cBody3.position.set(-0.02, 1.10, -0.01);
+cBody3.castShadow = true;
+cactus.add(cBody3);
+// 小白刺（8 颗围绕底部球体）
+const spineMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2;
+  const spine = new THREE.Mesh(new THREE.SphereGeometry(0.013, 6, 4), spineMat);
+  spine.position.set(Math.cos(a) * 0.21, 0.72, Math.sin(a) * 0.21);
+  cactus.add(spine);
 }
-const leafMat = new THREE.MeshStandardMaterial({
-  color: 0x3a7a4a, roughness: 0.6, metalness: 0.05, side: THREE.DoubleSide
-});
-// 8 片叶错位摆放在不同高度和方向
-const leafConfigs = [
-  { y: 1.20, a: 0,         tilt: -0.30, lean: 0.10, s: 0.95 },
-  { y: 1.45, a: 0.7,       tilt: -0.20, lean: -0.05, s: 1.00 },
-  { y: 1.70, a: 1.4,       tilt:  0.10, lean: 0.08, s: 1.05 },
-  { y: 1.95, a: 2.1,       tilt:  0.30, lean: -0.10, s: 1.00 },
-  { y: 2.20, a: 2.8,       tilt:  0.45, lean: 0.05, s: 0.92 },
-  { y: 2.45, a: 3.5,       tilt:  0.55, lean: -0.08, s: 0.85 },
-  { y: 2.65, a: 4.2,       tilt:  0.70, lean: 0.05, s: 0.78 },
-  { y: 1.55, a: 5.0,       tilt: -0.40, lean: 0.12, s: 0.90 },
-];
-leafConfigs.forEach(cfg => {
-  const leaf = new THREE.Mesh(makeMonsteraLeaf(), leafMat);
-  leaf.position.set(Math.cos(cfg.a) * 0.20, cfg.y, Math.sin(cfg.a) * 0.20);
-  // 让叶面朝外（径向）并稍向上倾
-  leaf.lookAt(
-    Math.cos(cfg.a) * 1.5,
-    cfg.y + Math.sin(cfg.tilt) * 0.5,
-    Math.sin(cfg.a) * 1.5
-  );
-  leaf.rotateX(cfg.tilt);
-  leaf.scale.setScalar(cfg.s);
-  leaf.castShadow = true;
-  leaf.receiveShadow = true;
-  monstera.add(leaf);
-});
-monstera.scale.setScalar(1.45);
-monstera.position.set(-2.2, 0, -5.5);  // 沙发左扶手外侧
-scene.add(monstera);
+cactus.position.set(-2.2, 0, -5.5);  // 沙发左扶手外侧
+scene.add(cactus);
 
 // ---------- 墙上挂画（用户提供的爬山图）----------
 const wallArtGroup = new THREE.Group();
@@ -476,7 +451,7 @@ texLoader.load(
 
 // 加载毛茸茸苔藓地毯（沙发前面）
 const mossRug = new THREE.Mesh(
-  new THREE.PlaneGeometry(4.0, 4.0),   // 放大到对齐沙发宽（沙发座 4×1.9 → 地毯 4×4 等比例放大）
+  new THREE.PlaneGeometry(6.4, 4.0),   // 宽度对齐沙发宽（沙发座 4 + 扶手 0.45×2 = 4.25，×1.5 scale = 6.4），深度 4
   new THREE.MeshStandardMaterial({
     transparent: true, alphaTest: 0.45, side: THREE.DoubleSide,
     roughness: 0.95, metalness: 0
