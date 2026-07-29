@@ -287,9 +287,9 @@ recordPlayer.add(tonearm);
 
 // 防尘盖 dust cover（半透明塑料，从后铰链向上打开）
 const coverMat = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
+  color: 0x223a5e,  // 藏蓝色（navy）——v19 由纯白改为藏蓝，仍保持半透玻璃质感
   transparent: true,
-  opacity: 0.22,
+  opacity: 0.32,     // v19：比纯白时略提，让藏蓝可见，但仍半透明
   roughness: 0.1,
   metalness: 0.15,
   side: THREE.DoubleSide,
