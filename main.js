@@ -136,12 +136,13 @@ arcLamp.add(arcBase);
 // 弧形金属杆：从底座先垂直上升，再自然往外水平延伸至灯罩（更有弧度的优雅曲线）
 // 灯座在房间中后偏左（不再贴墙），弧杆从底座垂直升起，再水平弯出到灯罩位置
 // 本轮（v10）：整体杆子高度+1/5，灯罩同步抬高到 y=7.0（+1 单位）
+// 本轮（v12）：灯杆末端接进灯罩"碗口"内（y=6.45 → y=7.0），与碗口平面同高
 const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.07, 0),       // 底座中心（+1/5）
   new THREE.Vector3(0.18, 2.4, 0.18),  // 先垂直上升（+1/5）
   new THREE.Vector3(0.36, 5.4, 0.36),  // 弧杆高点（+1/5）
-  new THREE.Vector3(1.5, 6.4, 1.5),    // 开始水平弯出（+1/5）
-  new THREE.Vector3(3.0, 6.45, 3.0)    // 灯罩底部开口位置（灯杆末端"插入"灯罩里，视觉自然连接）
+  new THREE.Vector3(1.5, 6.95, 1.5),   // 开始水平弯出（往碗口方向下降一点）
+  new THREE.Vector3(3.0, 7.0, 3.0)     // 灯罩碗口位置（灯杆末端"插入"碗口平面，视觉自然连接）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -150,6 +151,8 @@ const arcTube = new THREE.Mesh(
 arcTube.castShadow = true;
 arcLamp.add(arcTube);
 // 橙色半圆灯罩（开口朝下）—— 半球 SphereGeometry
+// 关键：SphereGeometry 上半球（thetaStart=0, thetaLength=π/2）默认开口就在 y=0 朝 -y（朝下）
+// 上一版 bug：rotation.x = π 把"默认朝下"翻成"朝上"，用户看到灯罩开口朝天 —— 已修
 const arcShade = new THREE.Mesh(
   new THREE.SphereGeometry(0.55, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
   new THREE.MeshStandardMaterial({
@@ -157,23 +160,23 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(3.0, 7.0, 3.0);  // 灯罩中心（灯杆末端 6.45 高度"插入"灯罩底部开口；中心 y=7.0 整体抬高 1.0）
-arcShade.rotation.x = Math.PI; // 开口朝下（经典钓鱼灯形态，照桌面）
+arcShade.position.set(3.0, 7.0, 3.0);  // 球心 = 碗口平面 y=7.0（碗口朝下，碗底 y=7.55 朝天）
+// arcShade.rotation.x = 0;  // 不旋转，默认开口朝下（朝 -y，照桌面）—— v12 修复
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
-// 灯罩下沿的小黑环（增加细节）
+// 灯罩下沿的小黑环（碗口边缘装饰）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(3.0, 6.45, 3.0);  // 灯罩底部边缘（跟灯杆末端同 y，"插入"连接）
+arcShadeRing.position.set(3.0, 7.0, 3.0);  // 碗口边缘 y=7.0（与球心同高 = 开口平面）
 arcLamp.add(arcShadeRing);
-// 灯头处微亮（让灯罩看起来有光）
+// 灯头处微亮（让灯罩看起来有光）—— 灯泡挂在碗内
 const arcBulb = new THREE.Mesh(
-  new THREE.SphereGeometry(0.35, 16, 12),
+  new THREE.SphereGeometry(0.20, 16, 12),
   new THREE.MeshStandardMaterial({
     color: 0xfff4d0, emissive: 0xffe9a0, emissiveIntensity: 1.8,
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(3.0, 6.8, 3.0);  // 灯头（灯罩内 y=6.8）
+arcBulb.position.set(3.0, 7.18, 3.0);  // 灯泡在碗内（碗口 y=7.0 上方 0.18 = 碗底 y=7.55 下方 0.37，被碗罩住）
 arcLamp.add(arcBulb);
 // 位置：房间中后偏左（从墙角往中央挪 2.5，灯更偏房间中心），弧形杆垂直上升后水平延伸
 arcLamp.position.set(-4.5, 0, -4.5);
@@ -196,9 +199,14 @@ for (let r = 0; r < 3; r++) {
 cabinet.position.set(6.0, 0, -6.6);  // 往沙发右侧挪 2.0（沙发右扶手外缘 x=4.29，柜左缘 x=4.5，间隙 0.21 紧贴但不重叠）
 scene.add(cabinet);
 
-// ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱，学习桌左侧 x=-7.0）----------
+// ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱，本轮 v12：桌子正前方贴左墙 + 整体放大 5 倍）----------
+// 位置：桌子 desk.position=(-6.45, 0, 0)，桌 z 范围约 [-1.5, +1.5]，x 范围 [-7.75, -5.15]
+// 新位置 (-6.5, 0, +2.2)：杂志架 z 中心在桌子前缘外 0.7m，x 中心在桌子中线稍偏左
+// 不旋转（CD 面朝 +z 朝相机），左缘 x=-7.75 紧贴左墙 -7.78，右缘 -5.25 不超桌右缘 -5.15
+// 整体 scale 5x：原杂志架高 1.85+0.22=2.07m → 10.35m（约房间墙高 12m 的 86%）
 const magazineRack = new THREE.Group();
-magazineRack.position.set(-7.0, 0, 0.0);
+magazineRack.position.set(-6.5, 0, 2.2);
+magazineRack.scale.setScalar(5);  // v12：整体放大 5 倍（用户要求）
 const ironMat = new THREE.MeshStandardMaterial({
   color: 0x121212, roughness: 0.45, metalness: 0.75
 });
