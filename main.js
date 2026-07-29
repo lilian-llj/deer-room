@@ -196,6 +196,190 @@ for (let r = 0; r < 3; r++) {
 cabinet.position.set(6.0, 0, -6.6);  // 往沙发右侧挪 2.0（沙发右扶手外缘 x=4.29，柜左缘 x=4.5，间隙 0.21 紧贴但不重叠）
 scene.add(cabinet);
 
+// ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱，学习桌左侧 x=-7.0）----------
+const magazineRack = new THREE.Group();
+magazineRack.position.set(-7.0, 0, 0.0);
+const ironMat = new THREE.MeshStandardMaterial({
+  color: 0x121212, roughness: 0.45, metalness: 0.75
+});
+// 2 根立柱（黑色铁艺）
+[-0.22, 0.22].forEach(x => {
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.018, 1.85, 12),
+    ironMat
+  );
+  pole.position.set(x, 0.925, 0);
+  pole.castShadow = true;
+  magazineRack.add(pole);
+});
+// 顶半圆拱（拱门造型）
+const arch = new THREE.Mesh(
+  new THREE.TorusGeometry(0.22, 0.018, 10, 32, Math.PI),
+  ironMat
+);
+arch.rotation.x = Math.PI;  // 半圆开口朝下
+arch.position.set(0, 1.85, 0);
+arch.castShadow = true;
+magazineRack.add(arch);
+// 4 层搁板（每层宽 0.50, 深 0.25, 厚 0.025）
+const SHELF_LEVELS = [0.18, 0.63, 1.08, 1.53];
+SHELF_LEVELS.forEach(y => {
+  const shelf = new THREE.Mesh(
+    new THREE.BoxGeometry(0.50, 0.025, 0.25),
+    ironMat
+  );
+  shelf.position.set(0, y, 0);
+  shelf.castShadow = true; shelf.receiveShadow = true;
+  magazineRack.add(shelf);
+  // 每层前缘"挡条"（防止书/CD 滑出）
+  const rail = new THREE.Mesh(
+    new THREE.BoxGeometry(0.50, 0.025, 0.02),
+    ironMat
+  );
+  rail.position.set(0, y + 0.06, 0.115);
+  magazineRack.add(rail);
+});
+// 底部踢脚（架子底座）
+const rackBase = new THREE.Mesh(
+  new THREE.BoxGeometry(0.52, 0.05, 0.27),
+  ironMat
+);
+rackBase.position.set(0, 0.025, 0);
+magazineRack.add(rackBase);
+scene.add(magazineRack);
+
+// ---------- 杂志架上的物件（圆形黑胶 / 方形专辑 / 长方形书籍）—— 全部预留图片位 ----------
+// 占位纹理生成器（用 Canvas 画占位图，标注 slot 编号，方便后期传图替换）
+function makeMagPlaceholderTexture(label, type, w = 256, h = 256) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  // 背景（按 type 区分颜色）
+  const bgMap = { record: '#1a1a1a', album: '#3a4a6a', book: '#6a4a2a' };
+  ctx.fillStyle = bgMap[type] || '#444';
+  ctx.fillRect(0, 0, w, h);
+  // 斜纹底（增加质感）
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  for (let i = -w; i < w; i += 16) {
+    ctx.fillRect(i, 0, 8, h);
+  }
+  // 边框
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(6, 6, w - 12, h - 12);
+  // 中心文字
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, w / 2, h / 2 - 14);
+  // 副标题
+  ctx.font = '18px sans-serif';
+  const subMap = { record: '黑胶唱片 · 封面位', album: '音乐专辑 · 封面位', book: '书籍 · 封面位' };
+  ctx.fillText(subMap[type] || '封面位', w / 2, h / 2 + 30);
+  // 提示
+  ctx.font = '14px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText('放图: assets/mag/' + label.toLowerCase().replace(/\s+/g, '-') + '.png', w / 2, h / 2 + 60);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// 异步加载真实图片（失败时保持占位纹理）
+function tryLoadMagCover(coverMesh, filename) {
+  const loader = new THREE.TextureLoader();
+  loader.load(
+    'assets/mag/' + filename,
+    (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      coverMesh.material.map = tex;
+      coverMesh.material.needsUpdate = true;
+    },
+    undefined,
+    () => { /* 文件不存在，保留占位纹理 */ }
+  );
+}
+
+// 物件生成器：type = 'record' | 'album' | 'book'
+function makeMagItem(filename, label, type, w, h, x, y, z) {
+  const grp = new THREE.Group();
+  grp.position.set(x, y, z);
+  // 中心点放在物件底部中央（搁板面 y=0）
+  let coverMesh;
+  if (type === 'record') {
+    // 黑胶唱片：黑色圆盘 + 中心圆形封面
+    const vinyl = new THREE.Mesh(
+      new THREE.CylinderGeometry(Math.min(w, h) / 2, Math.min(w, h) / 2, 0.006, 48),
+      new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.4, metalness: 0.15 })
+    );
+    vinyl.rotation.x = Math.PI / 2;  // 轴沿 z，圆面朝 +z
+    vinyl.castShadow = true;
+    grp.add(vinyl);
+    // 中心圆标贴（封面位置）
+    coverMesh = new THREE.Mesh(
+      new THREE.CircleGeometry(Math.min(w, h) * 0.32, 32),
+      new THREE.MeshStandardMaterial({
+        map: makeMagPlaceholderTexture(label, 'record', 256, 256),
+        roughness: 0.6, metalness: 0.0
+      })
+    );
+    coverMesh.position.z = 0.004;
+    grp.add(coverMesh);
+  } else if (type === 'album') {
+    // 方形专辑：薄盒 + 正面封面
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, 0.012),
+      new THREE.MeshStandardMaterial({ color: 0x222a3a, roughness: 0.5, metalness: 0.1 })
+    );
+    box.castShadow = true;
+    grp.add(box);
+    coverMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * 0.94, h * 0.94),
+      new THREE.MeshStandardMaterial({
+        map: makeMagPlaceholderTexture(label, 'album', 256, 256),
+        roughness: 0.55, metalness: 0.05
+      })
+    );
+    coverMesh.position.z = 0.007;
+    grp.add(coverMesh);
+  } else { // book
+    // 长方形书：书盒 + 封面
+    const book = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, 0.10),
+      new THREE.MeshStandardMaterial({ color: 0x553a22, roughness: 0.75, metalness: 0.05 })
+    );
+    book.castShadow = true;
+    grp.add(book);
+    coverMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * 0.94, h * 0.94),
+      new THREE.MeshStandardMaterial({
+        map: makeMagPlaceholderTexture(label, 'book', 256, 256),
+        roughness: 0.6, metalness: 0.05
+      })
+    );
+    coverMesh.position.z = 0.052;
+    grp.add(coverMesh);
+  }
+  tryLoadMagCover(coverMesh, filename);
+  return grp;
+}
+
+// 物件摆放规则（每层 slot 位置 x 范围 [-0.18, +0.18]，z=0.115 靠前展示）
+// 第 1 层（y=1.53）：1 圆形黑胶 + 1 方形专辑
+magazineRack.add(makeMagItem('record-1.png', 'Record 1', 'record', 0.34, 0.34, -0.11, 1.53 + 0.18, 0.115));
+magazineRack.add(makeMagItem('album-1.png',   'Album 1',  'album',  0.20, 0.20,  0.10, 1.53 + 0.10, 0.115));
+// 第 2 层（y=1.08）：2 本长方形书
+magazineRack.add(makeMagItem('book-1.png', 'Book 1', 'book', 0.12, 0.28, -0.10, 1.08 + 0.14, 0.115));
+magazineRack.add(makeMagItem('book-2.png', 'Book 2', 'book', 0.12, 0.28,  0.08, 1.08 + 0.14, 0.115));
+// 第 3 层（y=0.63）：2 方形专辑 + 1 本书
+magazineRack.add(makeMagItem('album-2.png', 'Album 2', 'album', 0.18, 0.18, -0.15, 0.63 + 0.09, 0.115));
+magazineRack.add(makeMagItem('album-3.png', 'Album 3', 'album', 0.18, 0.18,  0.02, 0.63 + 0.09, 0.115));
+magazineRack.add(makeMagItem('book-3.png',  'Book 3',  'book',  0.10, 0.24,  0.16, 0.63 + 0.12, 0.115));
+// 第 4 层（y=0.18）：1 圆形黑胶 + 1 方形专辑
+magazineRack.add(makeMagItem('record-2.png', 'Record 2', 'record', 0.32, 0.32, -0.10, 0.18 + 0.17, 0.115));
+magazineRack.add(makeMagItem('album-4.png',  'Album 4',  'album',  0.18, 0.18,  0.11, 0.18 + 0.09, 0.115));
+
 // ---------- 书桌（长边贴窗）----------
 const desk = new THREE.Group();
 const DESK = 0xf3e3cb;
@@ -411,7 +595,7 @@ scene.add(monstera);
 
 // ---------- 墙上挂画（用户提供的爬山图）----------
 const wallArtGroup = new THREE.Group();
-wallArtGroup.position.set(2.0, 6.4, -7.78);  // 水平往右挪 2.0（在沙发右半上方）
+wallArtGroup.position.set(1.1, 6.4, -7.78);  // 水平移到沙发正上方（沙发中心 x=1.1）
 scene.add(wallArtGroup);
 const wallFrame = new THREE.Mesh(
   new THREE.BoxGeometry(1, 1, 0.18),
