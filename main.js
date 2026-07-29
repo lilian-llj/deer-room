@@ -205,6 +205,121 @@ for (let r = 0; r < 3; r++) {
 cabinet.position.set(6.0, 0, -6.6);  // 往沙发右侧挪 2.0（沙发右扶手外缘 x=4.29，柜左缘 x=4.5，间隙 0.21 紧贴但不重叠）
 scene.add(cabinet);
 
+// ---------- 黑胶机（v18：复古 walnut 黑胶机，放在六抽屉柜顶上，参考图：实木+黑转盘+银唱臂+半透防尘盖+前格栅）----------
+// 抽屉柜顶面：世界 (6.0, 3.25, -6.6)，尺寸 3.0 × 1.7（宽×深）
+// 黑胶机 1.6 × 0.45 × 1.1（宽×高×深）居中放在柜顶，不超柜顶边界（柜顶 x∈[4.5,7.5]、z∈[-7.45,-5.75]）
+const recordPlayer = new THREE.Group();
+recordPlayer.position.set(6.0, 3.25, -6.6);
+
+// 主体（warm walnut 实木外壳）
+const playerBody = box(1.6, 0.45, 1.1, 0x6b3e1f, 0.65);
+playerBody.position.set(0, 0.225, 0);  // 底部贴柜顶（组内 y=0 = 世界 y=3.25）
+recordPlayer.add(playerBody);
+
+// 顶部装饰板（稍深木色，让转盘和控件"贴在"板上）
+const playerDeck = box(1.6, 0.02, 1.1, 0x5a3617, 0.6);
+playerDeck.position.set(0, 0.46, 0);  // 贴在 body 顶
+recordPlayer.add(playerDeck);
+
+// 前下沿扬声器格栅（深灰织物）
+const grille = box(1.4, 0.16, 0.025, 0x333333, 1.0);
+grille.position.set(0, 0.12, 0.555);  // body 前下沿
+recordPlayer.add(grille);
+
+// 控制面板（金属感深灰色，位于顶部右半区）
+const ctrlPanel = box(0.55, 0.025, 0.40, 0x4a4a4a, 0.45, { metalness: 0.6 });
+ctrlPanel.position.set(0.45, 0.475, 0.18);
+recordPlayer.add(ctrlPanel);
+
+// 控制旋钮（3 个银色小圆柱，排列在面板前缘）
+const knobMat = new THREE.MeshStandardMaterial({ color: 0xb8b8b8, roughness: 0.35, metalness: 0.85 });
+[-0.10, 0.00, 0.10].forEach((kx, i) => {
+  const knob = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 0.035, 16),
+    knobMat
+  );
+  knob.position.set(0.45 + kx, 0.505, 0.05 + i * 0.10);
+  knob.castShadow = true;
+  recordPlayer.add(knob);
+});
+
+// 黑胶转盘 platter（黑色金属盘，偏左中）
+const platter = cyl(0.40, 0.40, 0.04, 0x1a1a1a, 0.4);
+platter.position.set(-0.20, 0.50, -0.05);
+recordPlayer.add(platter);
+
+// 唱片 vinyl（黑色带凹槽感，贴在转盘顶）
+const vinyl = cyl(0.38, 0.38, 0.006, 0x0a0a0a, 0.35);
+vinyl.position.set(-0.20, 0.525, -0.05);
+recordPlayer.add(vinyl);
+
+// 中央唱片标签（米白色）
+const labelDisc = cyl(0.10, 0.10, 0.008, 0xf5e8c8, 0.6);
+labelDisc.position.set(-0.20, 0.535, -0.05);
+recordPlayer.add(labelDisc);
+
+// 中心轴 spindle（黑色细针）
+const spindle = cyl(0.012, 0.012, 0.06, 0x2a2a2a, 0.3);
+spindle.position.set(-0.20, 0.545, -0.05);
+recordPlayer.add(spindle);
+
+// 唱臂支座 pivot base（黑色圆柱，右后方）
+const pivotBase = cyl(0.06, 0.07, 0.10, 0x1a1a1a, 0.5);
+pivotBase.position.set(0.55, 0.52, -0.40);
+recordPlayer.add(pivotBase);
+
+// 配重 counterweight（唱臂支座后端）
+const counterweight = cyl(0.025, 0.025, 0.06, 0x4a4a4a, 0.5);
+counterweight.position.set(0.62, 0.55, -0.50);
+recordPlayer.add(counterweight);
+
+// 唱臂 tonearm（银色细杆从支座斜向唱片中心）
+const tonearmMat = new THREE.MeshStandardMaterial({ color: 0xc8c8c8, roughness: 0.3, metalness: 0.7 });
+const tonearm = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.008, 0.008, 0.80, 8),
+  tonearmMat
+);
+tonearm.position.set(0.18, 0.545, -0.22);  // 中点：pivot(0.55, 0.52, -0.40) 与 record(-0.20, 0.55, -0.05) 之间
+tonearm.rotation.z = Math.PI / 2;  // 圆柱轴 +y → -x（从支座指向唱片）
+tonearm.rotation.y = -0.45;  // 微向前（-z→+z）摆，让唱针落在唱片上
+tonearm.castShadow = true;
+recordPlayer.add(tonearm);
+
+// 防尘盖 dust cover（半透明塑料，从后铰链向上打开）
+const coverMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  transparent: true,
+  opacity: 0.22,
+  roughness: 0.1,
+  metalness: 0.15,
+  side: THREE.DoubleSide,
+  depthWrite: false
+});
+const hingeGroup = new THREE.Group();
+hingeGroup.position.set(0, 0.475, -0.55);  // 铰链位置：body 顶面后沿中线
+hingeGroup.rotation.x = -2.0;  // 打开约 -115°（合盖为 0）
+const dustCover = new THREE.Mesh(
+  new THREE.BoxGeometry(1.55, 0.012, 1.0),
+  coverMat
+);
+dustCover.position.set(0, 0.006, 0.5);  // 合盖下，cover 从铰链向前延伸 1.0
+hingeGroup.add(dustCover);
+recordPlayer.add(hingeGroup);
+
+// 后铰链小条 hinge（左右各一个，让防尘盖"看起来"从后铰链打开）
+const hingeMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4, metalness: 0.6 });
+[-0.4, 0.4].forEach((hx) => {
+  const hinge = new THREE.Mesh(
+    new THREE.BoxGeometry(0.06, 0.05, 0.06),
+    hingeMat
+  );
+  hinge.position.set(hx, 0.475, -0.55);
+  hinge.castShadow = true;
+  recordPlayer.add(hinge);
+});
+
+scene.add(recordPlayer);
+
 // ---------- 杂志架（黑色铁艺 4 层 + 顶半圆拱）
 // v11：桌子左侧 x=-7.0；
 // v12：挪到桌子正前方贴左墙 + 整体放大 5 倍（在 -6.5, 0, +2.2）；
