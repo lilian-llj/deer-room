@@ -123,7 +123,7 @@ const sofaArmR = box(0.45, 0.9, 1.9, LAV); sofaArmR.position.set(1.9, 0.6, 0); s
   const c = box(1.7, 0.35, 1.5, 0xf3dcef); c.position.set(x, 0.92, 0.05); sofa.add(c);
 });
 sofa.scale.setScalar(1.5);
-sofa.position.set(1.4, 0, -6);
+sofa.position.set(1.1, 0, -6);  // 往 -x（绿植方向）挪 0.3，间隙 0.16（不重叠）
 scene.add(sofa);
 
 // ---------- 钓鱼灯（弧形金属杆 + 橙色半圆灯罩，灯座落左后墙角，弧形杆向房间中心延伸，灯罩悬停红线高度 y=4.0）----------
@@ -139,8 +139,8 @@ const arcCurve = new THREE.CatmullRomCurve3([
   new THREE.Vector3(0, 0.06, 0),       // 底座中心
   new THREE.Vector3(0.15, 2.0, 0.15),  // 先垂直上升（几乎不外扩）
   new THREE.Vector3(0.30, 4.5, 0.30),  // 弧杆高点（仍接近垂直）
-  new THREE.Vector3(1.5, 5.8, 1.5),    // 开始水平弯出
-  new THREE.Vector3(3.0, 6.0, 3.0)     // 灯罩位置（壁画中心 y=6.0；world ≈ (-1.5, 6.0, -1.5)）
+  new THREE.Vector3(1.5, 5.7, 1.5),    // 开始水平弯出
+  new THREE.Vector3(3.0, 5.45, 3.0)    // 灯罩底部开口位置（灯杆末端"插入"灯罩里，视觉自然连接）
 ]);
 const arcTube = new THREE.Mesh(
   new THREE.TubeGeometry(arcCurve, 32, 0.04, 8, false),
@@ -156,13 +156,13 @@ const arcShade = new THREE.Mesh(
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
   })
 );
-arcShade.position.set(4.0, 6.0, 4.0);
+arcShade.position.set(3.0, 6.0, 3.0);  // 灯罩中心（灯杆末端 5.45 高度"插入"灯罩底部开口）
 arcShade.rotation.x = Math.PI; // 开口朝下
 arcShade.castShadow = true;
 arcLamp.add(arcShade);
 // 灯罩下沿的小黑环（增加细节）
 const arcShadeRing = cyl(0.55, 0.55, 0.04, 0x1a1a1a, 0.6, 32);
-arcShadeRing.position.set(4.0, 5.66, 4.0);
+arcShadeRing.position.set(3.0, 5.45, 3.0);  // 灯罩底部边缘
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）
 const arcBulb = new THREE.Mesh(
@@ -172,23 +172,23 @@ const arcBulb = new THREE.Mesh(
     roughness: 0.6, metalness: 0
   })
 );
-arcBulb.position.set(4.0, 5.75, 4.0);
+arcBulb.position.set(3.0, 5.75, 3.0);
 arcLamp.add(arcBulb);
 // 位置：房间中后偏左（从墙角往中央挪 2.5，灯更偏房间中心），弧形杆垂直上升后水平延伸
 arcLamp.position.set(-4.5, 0, -4.5);
 scene.add(arcLamp);
 
-// ---------- 六抽屉柜（招牌家具，靠后墙右侧）----------
+// ---------- 六抽屉柜（招牌家具，靠后墙右侧）---------- 高度降低 1/3，抽屉变长方形
 const cabinet = new THREE.Group();
-const cabBody = box(2.8, 4.6, 1.5, WOOD); cabBody.position.set(0, 2.3, 0); cabinet.add(cabBody);
-const cabTop = box(3.0, 0.18, 1.7, WOOD_D); cabTop.position.set(0, 4.69, 0); cabinet.add(cabTop);
+const cabBody = box(2.8, 3.07, 1.5, WOOD); cabBody.position.set(0, 1.535, 0); cabinet.add(cabBody);  // 高度 4.6 → 3.07（4.6×2/3）
+const cabTop = box(3.0, 0.18, 1.7, WOOD_D); cabTop.position.set(0, 3.16, 0); cabinet.add(cabTop);  // 顶板 y=3.16
 for (let r = 0; r < 3; r++) {
   for (let c = 0; c < 2; c++) {
-    const fy = 3.55 - r * 1.45;
+    const fy = 2.5 - r * 1.0;  // 顶抽屉 y=2.5, 中=1.5, 底=0.5（间隔 1.0 = 抽屉 0.65 + 间隙 0.35）
     const fx = c === 0 ? -0.7 : 0.7;
-    const f = box(1.2, 1.3, 0.08, CREAM);
+    const f = box(1.2, 0.65, 0.08, CREAM);  // 抽屉变扁：高度 1.3 → 0.65（长方形 1.2×0.65）
     f.position.set(fx, fy, 0.76); cabinet.add(f);
-    const handle = box(0.5, 0.1, 0.12, WOOD_D);
+    const handle = box(0.5, 0.08, 0.12, WOOD_D);  // 把手缩小匹配
     handle.position.set(fx, fy, 0.83); cabinet.add(handle);
   }
 }
