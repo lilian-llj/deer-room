@@ -84,13 +84,13 @@ fbL.position.set(lx, WIN_Y, WIN_Z - WIN_W / 2 - ft / 2); scene.add(fbL);
 const fbR = new THREE.Mesh(new THREE.BoxGeometry(lw + 0.08, WIN_H + ft * 2, ft), frameMat);
 fbR.position.set(lx, WIN_Y, WIN_Z + WIN_W / 2 + ft / 2); scene.add(fbR);
 
-// 圆形粉色地毯（保留）
+// 圆形粉色地毯（v22：挪到沙发前面）
 const rug = new THREE.Mesh(
   new THREE.CircleGeometry(3.4, 48),
   new THREE.MeshStandardMaterial({ color: 0xe3a0a0, roughness: 1 })
 );
 rug.rotation.x = -Math.PI / 2;
-rug.position.y = 0.012;
+rug.position.set(1.1, 0.012, -2.5);  // v22：从房间中心 (0,0,0) 移到沙发正前方（沙发中线 x=1.1，前缘外 z=-2.5）
 rug.receiveShadow = true;
 scene.add(rug);
 
@@ -815,68 +815,88 @@ texLoader.load(
   err => console.warn('走动贴图加载失败', err)
 );
 
-// ---------- 仿麻制纯色长方形大地毯（沙发前面）----------
-// 用 Canvas2D 程序生成亚麻色织物质感（无外部依赖、加载即时）
-// 1024×640：保留 6.4:4.0 比例，base 燕麦色 + 极细横向/竖向编织线 + 轻微噪点
-function makeLinenTexture() {
-  const c = document.createElement('canvas');
-  c.width = 1024; c.height = 640;
-  const ctx = c.getContext('2d');
-  // 燕麦色 base（和米色墙面/木色抽屉柜过渡自然）
-  ctx.fillStyle = '#DCCDB4';
-  ctx.fillRect(0, 0, 1024, 640);
-  // 极细横向编织线（每 2px 一条，明度±3）
-  for (let y = 0; y < 640; y += 2) {
-    const v = (Math.random() - 0.5) * 6;
-    ctx.fillStyle = v >= 0 ? `rgba(255,250,238,${0.10 + v/255})` : `rgba(120,100,72,${0.06 + Math.abs(v)/255})`;
-    ctx.fillRect(0, y, 1024, 1);
+// ---------- 粉色地毯上散落的乐高积木（v22）----------
+// 经典 2×N 砖块：主体 + 顶部凸点（studs）
+const legoColors = [0xc0392b, 0xf1c40f, 0x2980b9, 0x27ae60, 0xe67e22, 0x8e44ad, 0x16a085];
+function makeLego(color, w, d, studsX, studsZ) {
+  const g = new THREE.Group();
+  const h = 0.18;
+  const body = box(w, h, d, color, 0.55);
+  body.position.y = h / 2;
+  body.castShadow = true;
+  g.add(body);
+  const studR = 0.05, studH = 0.07;
+  for (let i = 0; i < studsX; i++) {
+    for (let j = 0; j < studsZ; j++) {
+      const sx = (i - (studsX - 1) / 2) * (w / studsX);
+      const sz = (j - (studsZ - 1) / 2) * (d / studsZ);
+      const stud = cyl(studR, studR, studH, color, 0.45, 12);
+      stud.position.set(sx, h + studH / 2, sz);
+      stud.castShadow = true;
+      g.add(stud);
+    }
   }
-  // 极细竖向编织线（每 3px 一条）
-  for (let x = 0; x < 1024; x += 3) {
-    const v = (Math.random() - 0.5) * 5;
-    ctx.fillStyle = v >= 0 ? `rgba(255,250,238,${0.06 + v/255})` : `rgba(120,100,72,${0.04 + Math.abs(v)/255})`;
-    ctx.fillRect(x, 0, 1, 640);
-  }
-  // 整体噪点（破除"完全平"的塑料感）
-  const img = ctx.getImageData(0, 0, 1024, 640);
-  for (let i = 0; i < img.data.length; i += 4) {
-    const n = (Math.random() - 0.5) * 8;
-    img.data[i  ] = Math.max(0, Math.min(255, img.data[i  ] + n));
-    img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
-    img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
-  }
-  ctx.putImageData(img, 0, 0);
-  // 双层流苏边（上/下边轻微颜色渐变，模拟麻绳收边）
-  const fringe = ctx.createLinearGradient(0, 0, 0, 36);
-  fringe.addColorStop(0, 'rgba(174,156,127,0.55)');
-  fringe.addColorStop(1, 'rgba(174,156,127,0)');
-  ctx.fillStyle = fringe;
-  ctx.fillRect(0, 0, 1024, 36);
-  const fringe2 = ctx.createLinearGradient(0, 640-36, 0, 640);
-  fringe2.addColorStop(0, 'rgba(174,156,127,0)');
-  fringe2.addColorStop(1, 'rgba(174,156,127,0.55)');
-  ctx.fillStyle = fringe2;
-  ctx.fillRect(0, 640-36, 1024, 36);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 8;
-  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-  return t;
+  return g;
 }
+// 散落坐标（x, z），均在粉色地毯范围（中心 1.1, -2.5，半径 3.4 → x∈[-2.3,4.5] z∈[-5.9,0.9]）且位于沙发前缘 z=-4.575 之前
+const legoSpots = [
+  [-1.4, -3.8, 0.9, 0.6, 2, 1],
+  [-0.4, -4.2, 0.6, 0.6, 1, 1],
+  [ 0.6, -3.4, 0.9, 0.6, 2, 1],
+  [ 1.6, -4.0, 0.6, 0.9, 1, 2],
+  [ 2.6, -3.6, 0.9, 0.6, 2, 1],
+  [ 3.1, -4.3, 0.6, 0.6, 1, 1],
+  [-2.1, -4.1, 0.6, 0.6, 1, 1],
+];
+legoSpots.forEach(([x, z, w, d, sx, sz], i) => {
+  const leg = makeLego(legoColors[i % legoColors.length], w, d, sx, sz);
+  leg.position.set(x, 0.012, z);
+  leg.rotation.y = (i * 0.8) % (Math.PI * 2);
+  scene.add(leg);
+});
 
-const linenTex = makeLinenTexture();
-const linenRug = new THREE.Mesh(
-  new THREE.PlaneGeometry(6.4, 4.0),   // 沿用原矩形：宽 6.4 对齐沙发 4.29×1.5scale，深 4.0
-  new THREE.MeshStandardMaterial({
-    map: linenTex,
-    color: 0xffffff,                    // 让贴图原色直出
-    roughness: 0.95, metalness: 0       // 织物：roughness 拉满、无金属感
-  })
-);
-linenRug.rotation.x = -Math.PI / 2;
-linenRug.position.set(1.4, 0.022, -2.5);  // y 提到 0.022（原 0.018），确保在粉色圆形地毯 0.012 之上、不遮挡
-linenRug.receiveShadow = true;
-scene.add(linenRug);
+// ---------- 沙发上的毛绒玩偶：长颈鹿 / 小猫 / 小狗（v22）----------
+// 玩偶底座 y=0，整体放到沙发座面世界 y≈1.2 上
+function makeGiraffe() {
+  const g = new THREE.Group();
+  const yellow = 0xf4d35e, brown = 0x9c6b30;
+  const body = box(0.5, 0.5, 0.7, yellow, 0.85); body.position.y = 0.28; body.castShadow = true; g.add(body);
+  [[-0.18,-0.25],[0.18,-0.25],[-0.18,0.25],[0.18,0.25]].forEach(([x,z]) => {
+    const leg = box(0.12, 0.3, 0.12, brown, 0.85); leg.position.set(x, 0.15, z); leg.castShadow = true; g.add(leg);
+  });
+  const neck = cyl(0.1, 0.12, 1.0, yellow, 0.85, 12); neck.position.set(0, 0.85, 0.08); neck.rotation.x = -0.35; neck.castShadow = true; g.add(neck);
+  const head = box(0.26, 0.22, 0.34, yellow, 0.85); head.position.set(0, 1.35, 0.34); head.castShadow = true; g.add(head);
+  const snout = box(0.16, 0.14, 0.16, brown, 0.85); snout.position.set(0, 1.28, 0.5); g.add(snout);
+  [-0.07, 0.07].forEach(x => { const h = cyl(0.03, 0.04, 0.14, brown, 0.85, 8); h.position.set(x, 1.5, 0.3); g.add(h); });
+  [[-0.2,0.28],[0.2,-0.1],[0.0,0.1],[-0.15,-0.22]].forEach(([x,z]) => { const s = box(0.1, 0.02, 0.1, brown, 0.85); s.position.set(x, 0.52, z); g.add(s); });
+  const tail = cyl(0.03, 0.03, 0.3, brown, 0.85, 8); tail.position.set(0, 0.35, -0.38); tail.rotation.x = 0.6; g.add(tail);
+  return g;
+}
+function makeCat() {
+  const g = new THREE.Group();
+  const orange = 0xe89b3b;
+  const mk = (r, s) => new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), new THREE.MeshStandardMaterial({ color: orange, roughness: 0.92 }));
+  const body = mk(0.3); body.scale.set(1, 0.85, 1.3); body.position.y = 0.3; body.castShadow = true; g.add(body);
+  const head = mk(0.22); head.position.set(0, 0.55, 0.28); head.castShadow = true; g.add(head);
+  [-0.12, 0.12].forEach(x => { const ear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.16, 4), new THREE.MeshStandardMaterial({ color: orange, roughness: 0.92 })); ear.position.set(x, 0.72, 0.28); g.add(ear); });
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 8), new THREE.MeshStandardMaterial({ color: orange, roughness: 0.92 })); tail.position.set(0, 0.35, -0.3); tail.rotation.x = -0.8; g.add(tail);
+  [[-0.15,-0.2],[0.15,-0.2],[-0.15,0.2],[0.15,0.2]].forEach(([x,z]) => { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.18, 8), new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.92 })); l.position.set(x, 0.09, z); g.add(l); });
+  return g;
+}
+function makeDog() {
+  const g = new THREE.Group();
+  const tan = 0xc89b6c, dark = 0x4a3520;
+  const body = box(0.55, 0.4, 0.8, tan, 0.9); body.position.y = 0.32; body.castShadow = true; g.add(body);
+  const head = box(0.34, 0.34, 0.32, tan, 0.9); head.position.set(0, 0.5, 0.5); head.castShadow = true; g.add(head);
+  const snout = box(0.18, 0.16, 0.18, dark, 0.9); snout.position.set(0, 0.44, 0.68); g.add(snout);
+  [-0.18, 0.18].forEach(x => { const e = box(0.07, 0.22, 0.1, tan, 0.9); e.position.set(x, 0.55, 0.46); e.rotation.x = 0.3; g.add(e); });
+  const tail = cyl(0.05, 0.04, 0.35, tan, 0.9, 8); tail.position.set(0, 0.45, -0.42); tail.rotation.x = 0.9; g.add(tail);
+  [[-0.18,-0.28],[0.18,-0.28],[-0.18,0.28],[0.18,0.28]].forEach(([x,z]) => { const l = box(0.1, 0.3, 0.1, dark, 0.9); l.position.set(x, 0.15, z); l.castShadow = true; g.add(l); });
+  return g;
+}
+const giraffe = makeGiraffe(); giraffe.position.set(0.1, 1.2, -5.7); giraffe.rotation.y = 0.3; scene.add(giraffe);
+const cat = makeCat(); cat.position.set(1.5, 1.2, -5.5); cat.rotation.y = -0.4; scene.add(cat);
+const dog = makeDog(); dog.position.set(2.8, 1.2, -5.8); dog.rotation.y = 0.5; scene.add(dog);
 
 // ---------- 输入 ----------
 addEventListener('keydown', (e) => (keys[e.key.toLowerCase()] = true));
