@@ -815,34 +815,68 @@ texLoader.load(
   err => console.warn('走动贴图加载失败', err)
 );
 
-// 加载毛茸茸苔藓地毯（沙发前面）
-const mossRug = new THREE.Mesh(
-  new THREE.PlaneGeometry(6.4, 4.0),   // 宽度对齐沙发宽（沙发座 4 + 扶手 0.45×2 = 4.25，×1.5 scale = 6.4），深度 4
+// ---------- 仿麻制纯色长方形大地毯（沙发前面）----------
+// 用 Canvas2D 程序生成亚麻色织物质感（无外部依赖、加载即时）
+// 1024×640：保留 6.4:4.0 比例，base 燕麦色 + 极细横向/竖向编织线 + 轻微噪点
+function makeLinenTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 640;
+  const ctx = c.getContext('2d');
+  // 燕麦色 base（和米色墙面/木色抽屉柜过渡自然）
+  ctx.fillStyle = '#DCCDB4';
+  ctx.fillRect(0, 0, 1024, 640);
+  // 极细横向编织线（每 2px 一条，明度±3）
+  for (let y = 0; y < 640; y += 2) {
+    const v = (Math.random() - 0.5) * 6;
+    ctx.fillStyle = v >= 0 ? `rgba(255,250,238,${0.10 + v/255})` : `rgba(120,100,72,${0.06 + Math.abs(v)/255})`;
+    ctx.fillRect(0, y, 1024, 1);
+  }
+  // 极细竖向编织线（每 3px 一条）
+  for (let x = 0; x < 1024; x += 3) {
+    const v = (Math.random() - 0.5) * 5;
+    ctx.fillStyle = v >= 0 ? `rgba(255,250,238,${0.06 + v/255})` : `rgba(120,100,72,${0.04 + Math.abs(v)/255})`;
+    ctx.fillRect(x, 0, 1, 640);
+  }
+  // 整体噪点（破除"完全平"的塑料感）
+  const img = ctx.getImageData(0, 0, 1024, 640);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = (Math.random() - 0.5) * 8;
+    img.data[i  ] = Math.max(0, Math.min(255, img.data[i  ] + n));
+    img.data[i+1] = Math.max(0, Math.min(255, img.data[i+1] + n));
+    img.data[i+2] = Math.max(0, Math.min(255, img.data[i+2] + n));
+  }
+  ctx.putImageData(img, 0, 0);
+  // 双层流苏边（上/下边轻微颜色渐变，模拟麻绳收边）
+  const fringe = ctx.createLinearGradient(0, 0, 0, 36);
+  fringe.addColorStop(0, 'rgba(174,156,127,0.55)');
+  fringe.addColorStop(1, 'rgba(174,156,127,0)');
+  ctx.fillStyle = fringe;
+  ctx.fillRect(0, 0, 1024, 36);
+  const fringe2 = ctx.createLinearGradient(0, 640-36, 0, 640);
+  fringe2.addColorStop(0, 'rgba(174,156,127,0)');
+  fringe2.addColorStop(1, 'rgba(174,156,127,0.55)');
+  ctx.fillStyle = fringe2;
+  ctx.fillRect(0, 640-36, 1024, 36);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
+const linenTex = makeLinenTexture();
+const linenRug = new THREE.Mesh(
+  new THREE.PlaneGeometry(6.4, 4.0),   // 沿用原矩形：宽 6.4 对齐沙发 4.29×1.5scale，深 4.0
   new THREE.MeshStandardMaterial({
-    transparent: true, alphaTest: 0.45, side: THREE.DoubleSide,
-    roughness: 0.95, metalness: 0
+    map: linenTex,
+    color: 0xffffff,                    // 让贴图原色直出
+    roughness: 0.95, metalness: 0       // 织物：roughness 拉满、无金属感
   })
 );
-mossRug.rotation.x = -Math.PI / 2;
-mossRug.position.set(1.4, 0.018, -2.5);  // 居中 x=1.4 对齐沙发中线，z=-2.5 往房间中心挪（沙发前缘 z=-4.6，地毯 4 深 z 范围 [-4.5, -0.5]，沙发下重叠 ≈ 0.1 已无）
-mossRug.receiveShadow = true;
-scene.add(mossRug);
-texLoader.load(
-  'assets/textures/moss-rug.png',
-  t => {
-    t.colorSpace = THREE.SRGBColorSpace;
-    mossRug.material.map = t;
-    mossRug.material.needsUpdate = true;
-    // 按图原比例调整 plane 尺寸（保持铺满感）
-    const img = t.image;
-    if (img) {
-      const r = img.height / img.width;
-      // 平面已 2.4x2.4（方形），地毯本身略方形也行
-    }
-  },
-  undefined,
-  err => console.warn('苔藓地毯加载失败', err)
-);
+linenRug.rotation.x = -Math.PI / 2;
+linenRug.position.set(1.4, 0.022, -2.5);  // y 提到 0.022（原 0.018），确保在粉色圆形地毯 0.012 之上、不遮挡
+linenRug.receiveShadow = true;
+scene.add(linenRug);
 
 // ---------- 输入 ----------
 addEventListener('keydown', (e) => (keys[e.key.toLowerCase()] = true));
