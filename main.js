@@ -815,63 +815,53 @@ texLoader.load(
   err => console.warn('走动贴图加载失败', err)
 );
 
-// ---------- 粉色地毯上散落的乐高积木（v22）----------
-// 经典 2×N 砖块：主体 + 顶部凸点（studs）
-const legoColors = [0xc0392b, 0xf1c40f, 0x2980b9, 0x27ae60, 0xe67e22, 0x8e44ad, 0x16a085];
-function makeLego(color, w, d, studsX, studsZ) {
+// ---------- 粉色地毯上散落的乐高小汽车（v23）----------
+// 参考图：木色车身 + 黄色车厢 + 红色半圆顶 + 蓝/绿车轮。整体小巧（长 0.6×高 0.4×宽 0.3，不含轮）
+function makeLegoCar() {
   const g = new THREE.Group();
-  const h = 0.18;
-  const body = box(w, h, d, color, 0.55);
-  body.position.y = h / 2;
-  body.castShadow = true;
-  g.add(body);
-  const studR = 0.05, studH = 0.07;
-  for (let i = 0; i < studsX; i++) {
-    for (let j = 0; j < studsZ; j++) {
-      const sx = (i - (studsX - 1) / 2) * (w / studsX);
-      const sz = (j - (studsZ - 1) / 2) * (d / studsZ);
-      const stud = cyl(studR, studR, studH, color, 0.45, 12);
-      stud.position.set(sx, h + studH / 2, sz);
-      stud.castShadow = true;
-      g.add(stud);
-    }
-  }
+  const wood = 0xd4a574, yellow = 0xf1c40f, red = 0xc0392b, blue = 0x3498db, green = 0x27ae60;
+  // 木色车身（底盘）box(0.6, 0.12, 0.30) — 中心 y=0.10，底 0.04 顶 0.16
+  const body = box(0.6, 0.12, 0.30, wood, 0.55);
+  body.position.y = 0.10; body.castShadow = true; g.add(body);
+  // 黄色车厢 box(0.32, 0.18, 0.26) — 后半部分居中堆叠（参考图车厢在车身中后）
+  const cab = box(0.32, 0.18, 0.26, yellow, 0.45);
+  cab.position.set(-0.05, 0.28, 0); cab.castShadow = true; g.add(cab);
+  // 红色半圆顶（开口朝下）放在黄色车厢顶
+  const top = new THREE.Mesh(
+    new THREE.SphereGeometry(0.13, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshStandardMaterial({ color: red, roughness: 0.55 })
+  );
+  top.position.set(-0.05, 0.37, 0); top.castShadow = true; g.add(top);
+  // 4 个车轮：左前蓝 / 右前绿 / 左后蓝 / 右后绿（轴沿 z = 横向滚动方向）
+  const wheelR = 0.08, wheelW = 0.06;
+  [[ 0.18, blue],[-0.18, green],[ 0.18, blue],[-0.18, green]].forEach(([zx, color], i) => {
+    const z = (i < 2) ? 0.18 : -0.18;  // 前轮 z=+0.18，后轮 z=-0.18
+    const wheel = cyl(wheelR, wheelR, wheelW, color, 0.45, 14);
+    wheel.rotation.x = Math.PI / 2;  // 轴沿 z = 前后方向
+    wheel.position.set(zx, 0.08, z); wheel.castShadow = true; g.add(wheel);
+  });
   return g;
 }
-// 散落坐标（x, z），均在粉色地毯范围（中心 1.1, -2.5，半径 3.4 → x∈[-2.3,4.5] z∈[-5.9,0.9]）且位于沙发前缘 z=-4.575 之前
-const legoSpots = [
-  [-1.4, -3.8, 0.9, 0.6, 2, 1],
-  [-0.4, -4.2, 0.6, 0.6, 1, 1],
-  [ 0.6, -3.4, 0.9, 0.6, 2, 1],
-  [ 1.6, -4.0, 0.6, 0.9, 1, 2],
-  [ 2.6, -3.6, 0.9, 0.6, 2, 1],
-  [ 3.1, -4.3, 0.6, 0.6, 1, 1],
-  [-2.1, -4.1, 0.6, 0.6, 1, 1],
+// 散落坐标（x, z, rotY），均在粉色地毯范围（中心 1.1, -2.5，半径 3.4）且位于沙发前缘 z=-4.575 之前
+const carSpots = [
+  [-1.2, -3.5,  0.3],
+  [ 0.8, -4.1, -0.5],
+  [ 2.6, -3.2,  1.2],
 ];
-legoSpots.forEach(([x, z, w, d, sx, sz], i) => {
-  const leg = makeLego(legoColors[i % legoColors.length], w, d, sx, sz);
-  leg.position.set(x, 0.012, z);
-  leg.rotation.y = (i * 0.8) % (Math.PI * 2);
-  scene.add(leg);
+carSpots.forEach(([x, z, ry]) => {
+  const car = makeLegoCar();
+  car.position.set(x, 0.012, z);
+  car.rotation.y = ry;
+  scene.add(car);
 });
 
-// ---------- 沙发上的毛绒玩偶：长颈鹿 / 小猫 / 小狗（v22）----------
-// 玩偶底座 y=0，整体放到沙发座面世界 y≈1.2 上
-function makeGiraffe() {
-  const g = new THREE.Group();
-  const yellow = 0xf4d35e, brown = 0x9c6b30;
-  const body = box(0.5, 0.5, 0.7, yellow, 0.85); body.position.y = 0.28; body.castShadow = true; g.add(body);
-  [[-0.18,-0.25],[0.18,-0.25],[-0.18,0.25],[0.18,0.25]].forEach(([x,z]) => {
-    const leg = box(0.12, 0.3, 0.12, brown, 0.85); leg.position.set(x, 0.15, z); leg.castShadow = true; g.add(leg);
-  });
-  const neck = cyl(0.1, 0.12, 1.0, yellow, 0.85, 12); neck.position.set(0, 0.85, 0.08); neck.rotation.x = -0.35; neck.castShadow = true; g.add(neck);
-  const head = box(0.26, 0.22, 0.34, yellow, 0.85); head.position.set(0, 1.35, 0.34); head.castShadow = true; g.add(head);
-  const snout = box(0.16, 0.14, 0.16, brown, 0.85); snout.position.set(0, 1.28, 0.5); g.add(snout);
-  [-0.07, 0.07].forEach(x => { const h = cyl(0.03, 0.04, 0.14, brown, 0.85, 8); h.position.set(x, 1.5, 0.3); g.add(h); });
-  [[-0.2,0.28],[0.2,-0.1],[0.0,0.1],[-0.15,-0.22]].forEach(([x,z]) => { const s = box(0.1, 0.02, 0.1, brown, 0.85); s.position.set(x, 0.52, z); g.add(s); });
-  const tail = cyl(0.03, 0.03, 0.3, brown, 0.85, 8); tail.position.set(0, 0.35, -0.38); tail.rotation.x = 0.6; g.add(tail);
-  return g;
-}
+// ---------- 沙发上的毛绒玩偶：小猫 + 小狗（v23：删除长颈鹿，位置前挪防穿模）----------
+// 沙发安全区复核：sofa position=(1.1,0,-6) scale=1.5
+//   座面世界 z∈[-7.42, -4.575]（深 1.9×1.5=2.85）
+//   靠背世界 z∈[-7.42, -5.26]（深 0.45×1.5=0.675）— 玩偶 z 必须 > -5.26 才不撞靠背
+//   扶手世界内缘 x=±2.51（避开），玩偶 x 须在 [-1.3, 3.4] 之内
+//   座面顶 y=0.80*1.5=1.20，玩偶底 y=1.20 贴座面
+// v22 旧位置 z=-5.5/-5.7/-5.8 穿模靠背 ~0.5，v23 改 z=-4.85（靠背前缘 -5.26 前 0.41）
 function makeCat() {
   const g = new THREE.Group();
   const orange = 0xe89b3b;
@@ -894,9 +884,9 @@ function makeDog() {
   [[-0.18,-0.28],[0.18,-0.28],[-0.18,0.28],[0.18,0.28]].forEach(([x,z]) => { const l = box(0.1, 0.3, 0.1, dark, 0.9); l.position.set(x, 0.15, z); l.castShadow = true; g.add(l); });
   return g;
 }
-const giraffe = makeGiraffe(); giraffe.position.set(0.1, 1.2, -5.7); giraffe.rotation.y = 0.3; scene.add(giraffe);
-const cat = makeCat(); cat.position.set(1.5, 1.2, -5.5); cat.rotation.y = -0.4; scene.add(cat);
-const dog = makeDog(); dog.position.set(2.8, 1.2, -5.8); dog.rotation.y = 0.5; scene.add(dog);
+// v23：删除长颈鹿，保留猫狗；位置前挪到 z=-4.85（避开靠背前缘 z=-5.26），y=1.20 贴座面顶
+const cat = makeCat(); cat.position.set(0.5, 1.20, -4.85); cat.rotation.y = -0.3; scene.add(cat);
+const dog = makeDog(); dog.position.set(2.5, 1.20, -4.85); dog.rotation.y = 0.4; scene.add(dog);
 
 // ---------- 输入 ----------
 addEventListener('keydown', (e) => (keys[e.key.toLowerCase()] = true));
