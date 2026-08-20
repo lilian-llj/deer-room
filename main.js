@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // ---------- 渲染器（canvas 尺寸由 applyResize() 统一管理）----------
 const canvas = document.getElementById('app');
@@ -9,7 +10,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
+renderer.toneMappingExposure = 1.22;   // v27：略提亮，更暖更通透
 
 // ---------- 场景 ----------
 const scene = new THREE.Scene();
@@ -29,6 +30,7 @@ dir.position.set(7, 15, 8);
 dir.castShadow = true;
 dir.shadow.mapSize.set(2048, 2048);
 dir.shadow.bias = -0.0004;
+dir.shadow.radius = 6;                 // v27：软化阴影边缘，更柔和
 const sc = dir.shadow.camera;
 sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16;
 sc.near = 1; sc.far = 50;
@@ -36,12 +38,54 @@ scene.add(dir);
 const win = new THREE.DirectionalLight(0xdfe9ff, 0.7);
 win.position.set(-9, 8, 4);
 scene.add(win);
+// v27：钓鱼灯暖光晕（参考图的落地灯氛围光，朝下洒在粉毯/沙发区）
+const lampGlow = new THREE.PointLight(0xffd9a0, 26, 13, 2);
+lampGlow.position.set(3.0, 5.6, 3.0);
+scene.add(lampGlow);
 
 // ---------- 房间 ----------
 const ROOM = 16;
+// v27：程序生成木纹地板贴图（参考图的长条原木风：错缝排版 + 木纹波动线 + 板间缝隙）
+function makeWoodFloorTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 1024;
+  const g = c.getContext('2d');
+  const planks = ['#e6c79e', '#ddba8d', '#eacfa9', '#d9b384', '#e3c49a'];
+  const rows = 8, ph = 1024 / rows;
+  for (let r = 0; r < rows; r++) {
+    const y = r * ph;
+    let x = -(r % 2) * 300;              // 奇偶行错缝
+    while (x < 1024) {
+      const w = 470 + ((r * 7 + Math.floor(Math.abs(x) / 97)) % 3) * 60;
+      g.fillStyle = planks[Math.abs(r + Math.floor(x / 131)) % planks.length];
+      g.fillRect(x, y, w, ph);
+      // 木纹：沿板长方向的波动细线
+      g.strokeStyle = 'rgba(122,82,42,0.10)';
+      g.lineWidth = 2;
+      for (let i = 0; i < 20; i++) {
+        const yy = y + 10 + (i / 20) * (ph - 20);
+        g.beginPath();
+        g.moveTo(x, yy);
+        for (let px = x; px < x + w; px += 28) g.lineTo(px, yy + Math.sin(px * 0.02 + i * 1.7) * 3);
+        g.stroke();
+      }
+      g.fillStyle = 'rgba(92,62,32,0.35)';   // 板端竖缝
+      g.fillRect(x + w - 3, y, 3, ph);
+      x += w;
+    }
+    g.fillStyle = 'rgba(92,62,32,0.30)';     // 板间横缝
+    g.fillRect(0, y, 1024, 3);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 3);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();  // 斜视角防模糊
+  return tex;
+}
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(ROOM, ROOM),
-  new THREE.MeshStandardMaterial({ color: 0xe0c298, roughness: 0.9 })
+  new THREE.MeshStandardMaterial({ map: makeWoodFloorTexture(), roughness: 0.85 })
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
@@ -85,9 +129,27 @@ const fbR = new THREE.Mesh(new THREE.BoxGeometry(lw + 0.08, WIN_H + ft * 2, ft),
 fbR.position.set(lx, WIN_Y, WIN_Z + WIN_W / 2 + ft / 2); scene.add(fbR);
 
 // 圆形粉色地毯（v22：挪到沙发前面）
+// v27：同心圆环织纹地毯贴图
+function makeRugTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e3a0a0';
+  g.fillRect(0, 0, 512, 512);
+  for (let r = 250; r > 0; r -= 34) {
+    g.beginPath();
+    g.arc(256, 256, r, 0, Math.PI * 2);
+    g.strokeStyle = (Math.round(r / 34) % 2) ? 'rgba(255,255,255,0.16)' : 'rgba(150,60,70,0.14)';
+    g.lineWidth = 16;
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
 const rug = new THREE.Mesh(
-  new THREE.CircleGeometry(3.4, 48),
-  new THREE.MeshStandardMaterial({ color: 0xe3a0a0, roughness: 1 })
+  new THREE.CircleGeometry(3.4, 64),
+  new THREE.MeshStandardMaterial({ map: makeRugTexture(), roughness: 1 })
 );
 rug.rotation.x = -Math.PI / 2;
 rug.position.set(1.1, 0.012, -2.5);  // v22：从房间中心 (0,0,0) 移到沙发正前方（沙发中线 x=1.1，前缘外 z=-2.5）
@@ -96,14 +158,16 @@ scene.add(rug);
 
 // ---------- 工具函数 ----------
 function box(w, h, d, color, rough = 0.9, opts = {}) {
+  // v27 圆角化（参考图的柔和家具风）：圆角半径随最小边自适应，薄板自动趋近 0 不变形
+  const radius = Math.min(0.055, Math.min(w, h, d) * 0.18);
   const m = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
+    new RoundedBoxGeometry(w, h, d, 4, radius),
     new THREE.MeshStandardMaterial({ color, roughness: rough, ...opts })
   );
   m.castShadow = true; m.receiveShadow = true;
   return m;
 }
-function cyl(rt, rb, h, color, rough = 0.9, seg = 24) {
+function cyl(rt, rb, h, color, rough = 0.9, seg = 48) {
   const m = new THREE.Mesh(
     new THREE.CylinderGeometry(rt, rb, h, seg),
     new THREE.MeshStandardMaterial({ color, roughness: rough })
@@ -160,7 +224,7 @@ arcLamp.add(arcTube);
 // 关键：SphereGeometry 上半球（thetaStart=0, thetaLength=π/2）默认开口就在 y=0 朝 -y（朝下）
 // 上一版 bug：rotation.x = π 把"默认朝下"翻成"朝上"，用户看到灯罩开口朝天 —— 已修
 const arcShade = new THREE.Mesh(
-  new THREE.SphereGeometry(0.55, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+  new THREE.SphereGeometry(0.55, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2),
   new THREE.MeshStandardMaterial({
     color: 0xe07840, roughness: 0.55, metalness: 0.15,
     emissive: 0xffd9a0, emissiveIntensity: 0.45, side: THREE.DoubleSide
@@ -176,7 +240,7 @@ arcShadeRing.position.set(3.0, 5.95, 3.0);  // v17：碗口边缘 y=5.95（与�
 arcLamp.add(arcShadeRing);
 // 灯头处微亮（让灯罩看起来有光）—— 灯泡挂在碗内
 const arcBulb = new THREE.Mesh(
-  new THREE.SphereGeometry(0.20, 16, 12),
+  new THREE.SphereGeometry(0.20, 32, 24),
   new THREE.MeshStandardMaterial({
     color: 0xfff4d0, emissive: 0xffe9a0, emissiveIntensity: 1.8,
     roughness: 0.6, metalness: 0
@@ -345,7 +409,7 @@ const ironMat = new THREE.MeshStandardMaterial({
 });
 // 顶半圆拱（拱门造型）
 const arch = new THREE.Mesh(
-  new THREE.TorusGeometry(0.50, 0.018, 10, 32, Math.PI),
+  new THREE.TorusGeometry(0.50, 0.018, 16, 48, Math.PI),
   ironMat
 );
 arch.rotation.x = Math.PI;  // 半圆开口朝下
@@ -828,7 +892,7 @@ function makeLegoCar() {
   cab.position.set(-0.05, 0.28, 0); cab.castShadow = true; g.add(cab);
   // 红色半圆顶（开口朝下）放在黄色车厢顶
   const top = new THREE.Mesh(
-    new THREE.SphereGeometry(0.13, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.SphereGeometry(0.13, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
     new THREE.MeshStandardMaterial({ color: red, roughness: 0.55 })
   );
   top.position.set(-0.05, 0.37, 0); top.castShadow = true; g.add(top);
